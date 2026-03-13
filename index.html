@@ -6,6 +6,7 @@
     <title>Metasboard | Copa Cajacity</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --primary: #00ff88; --secondary: #00d4ff; --bg-dark: #0f1218;
@@ -13,20 +14,34 @@
             --gradient: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-light); padding-bottom: 90px; }
+        body { background-color: var(--bg-dark); color: var(--text-light); padding-bottom: 90px; overflow-x: hidden; }
+        
+        /* Layout */
         .container { padding: 20px; max-width: 600px; margin: 0 auto; }
         .card { background: var(--bg-card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border-left: 4px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .hidden { display: none !important; }
-        .logo { font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* Tipografia e Logo */
+        .logo { font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(26, 31, 38, 0.95); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
-        .status-dot { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--primary); }
-        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 10px; border: 1px solid #333; background: #0b0e13; color: white; font-size: 1rem; }
-        .btn-primary { background: var(--gradient); border: none; padding: 16px; border-radius: 12px; color: #000; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
-        .btn-sec { background: #252a33; color: white; border: 1px solid #444; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.8rem; }
-        th { text-align: left; color: #888; padding-bottom: 10px; }
+        
+        /* Elementos de Status */
+        .status-dot { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--primary); margin-right: 8px; }
+        .badge { background: var(--primary); color: #000; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; }
+
+        /* Formulários */
+        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 10px; border: 1px solid #333; background: #0b0e13; color: white; font-size: 1rem; outline: none; }
+        input:focus { border-color: var(--primary); }
+        .btn-primary { background: var(--gradient); border: none; padding: 16px; border-radius: 12px; color: #000; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; margin-top: 5px; }
+        .btn-sec { background: #252a33; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+        
+        /* Tabelas e Listas */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+        th { text-align: left; color: #888; padding-bottom: 12px; border-bottom: 1px solid #333; }
         td { padding: 12px 5px; border-bottom: 1px solid #333; }
-        .match-card { background: #0b0e13; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent); }
+        .match-item { background: #111; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent); }
+        
+        /* Navegação */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1f26; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #333; z-index: 1000; }
         .nav-item { color: #888; text-align: center; cursor: pointer; flex: 1; font-size: 0.7rem; }
         .nav-item.active { color: var(--primary); }
@@ -35,109 +50,127 @@
 <body>
 
     <div id="view-auth" class="container">
-        <div style="text-align:center; margin: 50px 0 30px;">
-            <h1 class="logo" style="font-size: 2.5rem;">Cajacity</h1>
-            <p style="color:#666; font-size:0.8rem; letter-spacing:4px">METASBOARD v2.0</p>
+        <div style="margin: 60px 0 40px;">
+            <h1 class="logo" style="font-size: 3.5rem;">METAS</h1>
+            <p style="text-align:center; color:#666; font-size:0.8rem; letter-spacing:8px">BOARD v2.0</p>
         </div>
+        
         <div id="box-login" class="card">
-            <h3 style="text-align:center; margin-bottom:20px">LOGIN</h3>
+            <h3 style="text-align:center; margin-bottom:20px">ACESSAR ARENA</h3>
             <input type="email" id="login-email" placeholder="E-mail">
             <input type="password" id="login-pass" placeholder="Senha">
-            <button class="btn-primary" onclick="handleLogin()">Entrar na Arena</button>
-            <p onclick="toggleAuth(true)" style="text-align:center; margin-top:15px; color:var(--primary); cursor:pointer">Criar novo Nick</p>
+            <button class="btn-primary" id="btn-login">LOGAR AGORA</button>
+            <p onclick="toggleAuth(true)" style="text-align:center; margin-top:20px; color:var(--primary); cursor:pointer">Não tem Nick? <b>CRIAR CONTA</b></p>
         </div>
-        <div id="box-register" class="card hidden">
-            <h3 style="text-align:center; margin-bottom:20px">CADASTRO</h3>
-            <input type="text" id="reg-nick" placeholder="Nick Único">
+
+        <div id="box-register" class="card hidden" style="border-left-color: var(--secondary)">
+            <h3 style="text-align:center; margin-bottom:20px">NOVO JOGADOR</h3>
+            <input type="text" id="reg-nick" placeholder="Escolha seu Nick">
             <input type="email" id="reg-email" placeholder="E-mail">
-            <input type="password" id="reg-pass" placeholder="Senha (mín. 6)">
-            <button class="btn-primary" onclick="handleRegister()">Registrar Jogador</button>
-            <p onclick="toggleAuth(false)" style="text-align:center; margin-top:15px; color:var(--primary); cursor:pointer">Já tenho conta</p>
+            <input type="password" id="reg-pass" placeholder="Senha (mín. 6 dígitos)">
+            <button class="btn-primary" id="btn-register" style="background: var(--secondary); color: white">CADASTRAR JOGADOR</button>
+            <p onclick="toggleAuth(false)" style="text-align:center; margin-top:20px; color:var(--secondary); cursor:pointer">Já tem conta? <b>LOGAR</b></p>
         </div>
     </div>
 
     <div id="view-dash" class="hidden">
         <header>
-            <div class="logo">Metasboard</div>
-            <div><span class="status-dot"></span> <span id="user-nick">...</span></div>
+            <div class="logo" style="font-size: 1rem;">Metasboard</div>
+            <div><span class="status-dot"></span> <span id="meu-nick">...</span></div>
         </header>
         <div class="container">
             <div class="card" style="border-left-color: var(--secondary)">
-                <h4>Lobby Online</h4>
-                <div id="lobby-list" style="margin-top:10px"></div>
+                <h4><i class="fas fa-users"></i> Lobby Online</h4>
+                <div id="lobby-online" style="margin-top:10px"></div>
             </div>
-            <div id="area-convites" class="hidden">
-                <h4 style="color:var(--accent)">Convites</h4>
-                <div id="lista-convites"></div>
+
+            <div id="notificacoes-convite" class="hidden">
+                <h4 style="color:var(--accent); margin-bottom:10px"><i class="fas fa-bell"></i> Convites</h4>
+                <div id="lista-convites-recebidos"></div>
             </div>
+
             <div class="card">
-                <h4>Novo Campeonato</h4>
-                <input type="text" id="camp-name" placeholder="Nome da Copa" style="margin-top:10px">
-                <select id="camp-game">
-                    <option value="PES 2018">PES 2018</option>
-                    <option value="EA FC 24">EA FC 24</option>
+                <h4>Criar Campeonato</h4>
+                <input type="text" id="camp-nome" placeholder="Nome da Copa" style="margin-top:10px">
+                <select id="camp-jogo">
+                    <option value="PES 2018">PES 2018 (PS3)</option>
+                    <option value="EA FC 24">EA Sports FC 24</option>
                 </select>
-                <button class="btn-primary" onclick="createCamp()">Criar</button>
+                <button class="btn-primary" onclick="criarCampeonato()">INICIAR COPA</button>
             </div>
-            <h4>Minhas Copas</h4>
-            <div id="lista-camps"></div>
+
+            <h4 style="margin: 20px 0 10px">Meus Campeonatos</h4>
+            <div id="meus-campeonatos"></div>
         </div>
     </div>
 
     <div id="view-arena" class="hidden">
         <header>
-            <div class="logo" onclick="showView('view-dash')">← Voltar</div>
-            <span id="arena-title" class="logo" style="font-size:0.9rem">---</span>
+            <div class="logo" onclick="showView('view-dash')" style="cursor:pointer; font-size:0.8rem">← VOLTAR</div>
+            <span id="arena-nome-titulo" style="font-weight:800; color:var(--primary)">---</span>
         </header>
         <div class="container">
             <div style="display:flex; gap:10px; margin-bottom:20px">
-                <button class="btn-sec" onclick="tabArena('tab-table')">Tabela</button>
-                <button class="btn-sec" onclick="tabArena('tab-hist')">Histórico</button>
-                <button id="btn-admin" class="btn-sec hidden" style="border-color:var(--accent)" onclick="tabArena('tab-admin')">Admin</button>
+                <button class="btn-sec" style="flex:1" onclick="tabArena('tabela')">Classificação</button>
+                <button class="btn-sec" style="flex:1" onclick="tabArena('historico')">Partidas</button>
+                <button id="tab-admin-btn" class="btn-sec hidden" style="flex:1; border-color:var(--accent)" onclick="tabArena('admin')">Admin</button>
             </div>
 
-            <div id="tab-table">
+            <div id="arena-tab-tabela">
                 <div class="card">
                     <table>
                         <thead><tr><th>#</th><th>NICK</th><th>P</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr></thead>
-                        <tbody id="table-body"></tbody>
+                        <tbody id="tabela-corpo"></tbody>
                     </table>
                 </div>
             </div>
 
-            <div id="tab-hist" class="hidden">
-                <div id="history-list"></div>
+            <div id="arena-tab-historico" class="hidden">
+                <div id="historico-lista-detalhada"></div>
             </div>
 
-            <div id="tab-admin" class="hidden">
+            <div id="arena-tab-admin" class="hidden">
                 <div class="card" style="border-left-color: var(--accent)">
                     <h4>Registrar Placar</h4>
                     <select id="adm-p1" style="margin-top:10px"></select>
-                    <div style="display:flex; gap:10px; align-items:center">
-                        <input type="number" id="adm-g1" placeholder="0" style="text-align:center">
+                    <div style="display:flex; gap:15px; align-items:center; margin-bottom:12px">
+                        <input type="number" id="adm-g1" placeholder="0" style="text-align:center; font-size:1.5rem">
                         <span>X</span>
-                        <input type="number" id="adm-g2" placeholder="0" style="text-align:center">
+                        <input type="number" id="adm-g2" placeholder="0" style="text-align:center; font-size:1.5rem">
                     </div>
                     <select id="adm-p2"></select>
-                    <button class="btn-primary" onclick="saveMatch()">Salvar Partida</button>
+                    <button class="btn-primary" onclick="salvarPlacar()">PUBLICAR RESULTADO</button>
                 </div>
                 <div class="card">
-                    <h4>Convidar</h4>
-                    <div id="admin-user-list"></div>
+                    <h4>Enviar Convites</h4>
+                    <div id="admin-convidar-jogadores"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <nav id="main-nav" class="bottom-nav hidden">
-        <div class="nav-item active" onclick="showView('view-dash')"><i class="fas fa-home"></i><br>Home</div>
-        <div class="nav-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><br>Sair</div>
+        <div class="nav-item active" onclick="showView('view-dash')"><i class="fas fa-home"></i><br>Dashboard</div>
+        <div class="nav-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><br>Desconectar</div>
     </nav>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="js/firebase.js"></script>
+    
+    <script>
+        // Este é o firebase.js embutido para garantir que tudo funcione na raiz
+        const firebaseConfig = {
+            // Suas chaves de API aqui
+            apiKey: "AIzaSyB...",
+            authDomain: "cajacity-cup.firebaseapp.com",
+            projectId: "cajacity-cup",
+            storageBucket: "cajacity-cup.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
