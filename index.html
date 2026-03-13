@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Copa Cajacity | Oficial</title>
+    <title>Copa Cajacity | Pro Arena</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -12,171 +12,151 @@
             --card: #0f1217; --glass: rgba(255, 255, 255, 0.03);
             --text: #ffffff; --text-dim: #8a8d91;
             --grad: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
-            --danger: #ff4757;
         }
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); overflow-x: hidden; height: 100vh; }
+        body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; width: 100vw; }
         .hidden { display: none !important; }
 
-        /* --- TELAS DE ACESSO --- */
-        .auth-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 40px; background: radial-gradient(circle at top, #111 0%, #05070a 100%); }
-        .brand-title { font-size: 2.8rem; font-weight: 800; letter-spacing: -3px; text-align: center; margin-bottom: 40px; }
-        .brand-title span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        /* --- HEADER --- */
-        header { 
-            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
-            background: rgba(5, 7, 10, 0.9); backdrop-filter: blur(20px);
-            position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--glass);
-        }
-        .profile-btn { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .avatar-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--grad); border: 2px solid #222; background-size: cover; background-position: center; }
+        /* --- AUTH --- */
+        .auth-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 40px; background: radial-gradient(circle at top right, #112211 0%, #05070a 100%); }
+        .brand-logo { font-size: 3rem; font-weight: 800; letter-spacing: -3px; text-align: center; line-height: 0.9; margin-bottom: 40px; }
+        .brand-logo span { color: var(--primary); text-shadow: 0 0 20px rgba(0,255,136,0.4); }
+
+        /* --- LAYOUT --- */
+        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(5,7,10,0.8); backdrop-filter: blur(15px); position: sticky; top:0; z-index:100; border-bottom: 1px solid var(--glass); }
+        .user-trigger { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--glass); border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--grad); background-size: cover; border: 2px solid #222; }
 
         /* --- SIDEBAR --- */
-        #profile-sidebar {
-            position: fixed; top: 0; right: -100%; width: 85%; height: 100%;
-            background: var(--card); z-index: 1000; transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 40px 25px; border-left: 1px solid var(--glass);
-        }
-        #profile-sidebar.active { right: 0; }
+        #sidebar { position: fixed; top:0; right:-100%; width: 85%; height: 100%; background: var(--card); z-index: 1000; transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); padding: 40px 25px; border-left: 1px solid var(--glass); box-shadow: -20px 0 50px rgba(0,0,0,0.8); }
+        #sidebar.active { right: 0; }
 
-        /* --- ELEMENTOS DE UI --- */
-        .card { background: var(--card); border-radius: 24px; padding: 22px; margin-bottom: 18px; border: 1px solid var(--glass); }
-        .input-group { margin-bottom: 15px; }
-        input, select, textarea { 
-            width: 100%; background: #181c22; border: 1px solid #2a2f36; 
-            padding: 16px; border-radius: 14px; color: #fff; font-size: 1rem; outline: none; transition: 0.3s;
-        }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,255,136,0.1); }
+        /* --- CONTENT --- */
+        main { height: calc(100vh - 165px); overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
+        .card { background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 15px; border: 1px solid var(--glass); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        input, select, textarea { width: 100%; background: #161a20; border: 1px solid #2a2f36; padding: 16px; border-radius: 14px; color: #fff; font-size: 1rem; margin-bottom: 12px; outline: none; }
+        .btn-glow { background: var(--grad); border:none; padding: 18px; border-radius: 16px; width: 100%; font-weight: 800; color:#000; cursor:pointer; text-transform: uppercase; box-shadow: 0 5px 15px rgba(0,255,136,0.2); }
+
+        /* --- CHAT EVOLUÍDO --- */
+        #chat-window { position: fixed; bottom: 95px; left: 0; width: 100%; height: 80vh; background: var(--card); z-index: 101; display: none; flex-direction: column; border-radius: 30px 30px 0 0; border-top: 1px solid var(--primary); }
+        #chat-header { padding: 20px; border-bottom: 1px solid var(--glass); display: flex; justify-content: space-between; align-items: center; }
+        #chat-msgs { flex:1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .msg-bubble { padding: 10px 15px; border-radius: 18px; max-width: 85%; position: relative; }
+        .msg-info { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 4px; font-weight: 700; }
+        .msg-time { opacity: 0.5; font-weight: 400; margin-left: 8px; }
         
-        .btn-action { 
-            background: var(--grad); border: none; padding: 18px; border-radius: 16px;
-            width: 100%; font-weight: 800; color: #000; cursor: pointer; transition: 0.3s;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .btn-action:active { transform: scale(0.97); }
+        .emoji-bar { display: flex; gap: 10px; padding: 10px 20px; overflow-x: auto; background: rgba(0,0,0,0.2); }
+        .emoji-item { font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+        .emoji-item:hover { transform: scale(1.3); }
 
-        /* --- NAV INFERIOR --- */
-        .nav-bar {
-            position: fixed; bottom: 0; width: 100%; height: 85px;
-            background: rgba(15, 18, 23, 0.98); backdrop-filter: blur(10px);
-            display: flex; justify-content: space-around; padding-bottom: 20px; z-index: 90;
-            border-top: 1px solid var(--glass);
-        }
-        .nav-link { color: #555; text-align: center; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: 0.3s; padding-top: 15px; }
-        .nav-link.active { color: var(--primary); }
-        .nav-link i { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+        /* --- NAV --- */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 85px; background: rgba(15,18,23,0.95); backdrop-filter: blur(15px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--glass); padding-bottom: 15px; z-index:90; }
+        .nav-tab { color: #444; text-align: center; font-size: 0.6rem; font-weight: 800; transition: 0.3s; }
+        .nav-tab.active { color: var(--primary); }
+        .nav-tab i { font-size: 1.5rem; display: block; margin-bottom: 4px; }
 
-        /* --- TABELAS --- */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { color: var(--text-dim); font-size: 0.7rem; text-transform: uppercase; padding: 12px; border-bottom: 1px solid #222; }
-        td { padding: 16px 10px; text-align: center; border-bottom: 1px solid #1a1a1a; font-size: 0.9rem; }
-        .rank { font-weight: 800; color: var(--secondary); }
-
-        /* --- CHAT --- */
-        #chat-float { position: fixed; bottom: 100px; right: 20px; width: 55px; height: 55px; background: var(--grad); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 99; color: #000; font-size: 1.3rem; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        #chat-window { position: fixed; bottom: 100px; right: 20px; width: 330px; height: 480px; background: var(--card); border-radius: 25px; border: 1px solid var(--primary); z-index: 101; display: none; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        /* --- TABELA PROFISSIONAL --- */
+        .live-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        .live-table th { padding: 10px; font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; text-align: center; }
+        .live-table tr { background: rgba(255,255,255,0.02); }
+        .live-table td { padding: 15px 10px; text-align: center; first-child { border-radius: 15px 0 0 15px; } last-child { border-radius: 0 15px 15px 0; } }
+        .pos-num { width: 35px; height: 35px; display: inline-flex; align-items: center; justify-content: center; background: #222; border-radius: 50%; font-weight: 800; border: 1px solid var(--glass); }
     </style>
 </head>
 <body>
 
-    <div id="auth-manager">
-        <div id="screen-login" class="auth-screen">
-            <h1 class="brand-title">COPA<br><span>CAJACITY</span></h1>
-            <div class="input-group">
-                <input type="email" id="login-email" placeholder="E-mail de acesso">
-            </div>
-            <div class="input-group">
-                <input type="password" id="login-pass" placeholder="Senha">
-            </div>
-            <button class="btn-action" onclick="appLogin()">ENTRAR</button>
-            <p onclick="showAuth('reg')" style="text-align:center; margin-top:25px; color: var(--text-dim); font-size: 0.9rem;">Não tem conta? <span style="color:var(--primary)">Cadastrar Nick</span></p>
+    <div id="auth-area">
+        <div id="login-screen" class="auth-screen">
+            <h1 class="brand-logo">COPA<br><span>CAJACITY</span></h1>
+            <input type="email" id="l-email" placeholder="E-mail">
+            <input type="password" id="l-pass" placeholder="Senha">
+            <button class="btn-glow" onclick="doLogin()">ENTRAR NA ARENA</button>
+            <p onclick="toggleAuth('reg')" style="text-align:center; margin-top:25px; color:var(--text-dim)">Primeira vez? <span style="color:var(--primary)">Criar Nick</span></p>
         </div>
 
-        <div id="screen-reg" class="auth-screen hidden">
-            <h1 class="brand-title">COPA<br><span>CAJACITY</span></h1>
-            <input type="text" id="reg-nick" placeholder="Seu Nick de Jogador">
-            <input type="email" id="reg-email" placeholder="E-mail">
-            <input type="password" id="reg-pass" placeholder="Senha (mín. 6 dígitos)">
-            <button class="btn-action" onclick="appRegister()" style="margin-top:10px">CRIAR CONTA</button>
-            <p onclick="showAuth('login')" style="text-align:center; margin-top:25px; color: var(--text-dim); font-size: 0.9rem;">Já possui conta? <span style="color:var(--primary)">Fazer Login</span></p>
+        <div id="reg-screen" class="auth-screen hidden">
+            <h1 class="brand-logo">COPA<br><span>CAJACITY</span></h1>
+            <input type="text" id="r-nick" placeholder="Seu Nick de Jogador">
+            <input type="email" id="r-email" placeholder="E-mail">
+            <input type="password" id="r-pass" placeholder="Senha (mín. 6)">
+            <button class="btn-glow" onclick="doRegister()">CRIAR CONTA</button>
+            <p onclick="toggleAuth('login')" style="text-align:center; margin-top:25px; color:var(--text-dim)">Já tem conta? <span style="color:var(--primary)">Voltar</span></p>
         </div>
     </div>
 
-    <div id="main-app" class="hidden">
+    <div id="app-area" class="hidden">
         <header>
-            <div style="font-weight: 800; font-size: 1.2rem; letter-spacing: -1px;">COPA <span style="color:var(--primary)">CAJACITY</span></div>
-            <div class="profile-btn" onclick="openProfile(true)">
-                <span id="nav-user-name" style="font-size: 0.8rem; font-weight: 700;">---</span>
-                <div class="avatar-circle" id="nav-user-img"></div>
+            <div style="font-weight: 800; letter-spacing: -1px;">COPA <span style="color:var(--primary)">CAJACITY</span></div>
+            <div class="user-trigger" onclick="toggleSidebar(true)">
+                <span id="user-nick-top" style="font-size: 0.75rem; font-weight: 700;">---</span>
+                <div class="avatar" id="user-img-top"></div>
             </div>
         </header>
 
-        <div id="profile-sidebar">
-            <div onclick="openProfile(false)" style="font-size: 2rem; margin-bottom: 30px;">&times;</div>
-            <h2 style="margin-bottom: 40px;">Configurações</h2>
-            
+        <div id="sidebar">
+            <div onclick="toggleSidebar(false)" style="font-size: 2rem; margin-bottom: 20px;">&times;</div>
             <div style="text-align: center; margin-bottom: 30px;">
-                <div id="profile-img-large" style="width: 90px; height: 90px; border-radius: 50%; background: var(--grad); margin: 0 auto 15px; border: 3px solid #222; background-size: cover; background-position: center;"></div>
-                <h3 id="profile-name-title">Nick</h3>
+                <div id="side-avatar" style="width: 80px; height: 80px; border-radius: 50%; background: var(--grad); margin: 0 auto 10px; border: 3px solid #222; background-size: cover;"></div>
+                <h3 id="side-name">Jogador</h3>
             </div>
-
-            <label style="font-size: 0.8rem; color: var(--text-dim);">URL da sua Foto:</label>
-            <input type="text" id="input-new-img" placeholder="Cole o link da imagem aqui">
-            
-            <label style="font-size: 0.8rem; color: var(--text-dim); margin-top: 10px; display: block;">Mudar Nick:</label>
-            <input type="text" id="input-new-nick" placeholder="Novo Nick">
-            
-            <button class="btn-action" onclick="saveProfile()" style="margin-top: 20px;">ATUALIZAR DADOS</button>
-            <button class="btn-action" onclick="appLogout()" style="margin-top: 40px; background: #1a1a1a; color: var(--danger);">DESCONECTAR</button>
+            <input type="text" id="upd-img" placeholder="URL da Foto">
+            <input type="text" id="upd-nick" placeholder="Novo Nick">
+            <button class="btn-glow" onclick="updateUser()">SALVAR</button>
+            <button class="btn-glow" onclick="doLogout()" style="margin-top:20px; background:#1a1a1a; color:var(--secondary)">SAIR</button>
         </div>
 
-        <main style="padding: 20px; padding-bottom: 120px;">
-            <div id="view-lobby" class="content-tab">
-                <h3 style="margin-bottom: 20px;">Jogadores na Ativa</h3>
-                <div id="online-players"></div>
+        <main id="main-content">
+            <div id="tab-lobby" class="page">
+                <h3 style="margin-bottom: 20px;">Arena Online</h3>
+                <div id="players-list"></div>
             </div>
 
-            <div id="view-copas" class="content-tab hidden">
+            <div id="tab-copas" class="page hidden">
                 <div class="card">
-                    <h4>Criar Campeonato</h4>
-                    <input type="text" id="cp-nome" placeholder="Nome da Competição">
-                    <select id="cp-formato">
+                    <h4>Nova Competição</h4>
+                    <input type="text" id="c-nome" placeholder="Nome da Copa">
+                    <select id="c-tipo">
                         <option value="liga">Pontos Corridos</option>
-                        <option value="champions">Fase de Grupos + Mata-Mata</option>
+                        <option value="champions">Modo Champions League</option>
                     </select>
-                    <textarea id="cp-regras" placeholder="Regras do Host (ex: 5 min, times sorteados...)"></textarea>
-                    <button class="btn-action" onclick="createCopa()">LANÇAR COPA</button>
+                    <textarea id="c-regras" placeholder="Regras Gerais..."></textarea>
+                    <button class="btn-glow" onclick="createCopa()">LANÇAR COPA</button>
                 </div>
-                <div id="lista-copas"></div>
+                <div id="copas-list"></div>
             </div>
 
-            <div id="view-arena" class="content-tab hidden">
-                <div id="arena-placeholder">
-                    <p style="text-align:center; color: var(--text-dim); margin-top: 100px;">Nenhuma copa selecionada.</p>
+            <div id="tab-arena" class="page hidden">
+                <div id="arena-view">
+                    <p style="text-align:center; color:var(--text-dim); margin-top:50px">Selecione uma Copa para entrar na Arena.</p>
                 </div>
-                <div id="arena-data" class="hidden">
-                    </div>
             </div>
         </main>
 
-        <div id="chat-float" onclick="toggleChat(true)"><i class="fas fa-comments"></i></div>
         <div id="chat-window">
-            <div style="padding: 20px; border-bottom: 1px solid var(--glass); display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 800; color: var(--primary);">CONVERSA GLOBAL</span>
-                <i class="fas fa-times" onclick="toggleChat(false)" style="cursor:pointer"></i>
+            <div id="chat-header">
+                <span style="font-weight: 800;"><i class="fas fa-circle" style="color:var(--primary); font-size:0.6rem"></i> CHAT GLOBAL</span>
+                <i class="fas fa-times" onclick="toggleChat(false)"></i>
             </div>
-            <div id="chat-messages" style="flex:1; overflow-y:auto; padding: 20px;"></div>
-            <div style="padding: 15px; display: flex; gap: 10px;">
-                <input type="text" id="chat-input" placeholder="Mensagem..." style="margin-bottom:0">
-                <button onclick="sendChatMessage()" style="background: var(--primary); border:none; border-radius:12px; padding:0 18px;"><i class="fas fa-paper-plane"></i></button>
+            <div id="chat-msgs"></div>
+            <div class="emoji-bar">
+                <span class="emoji-item" onclick="addEmoji('🔥')">🔥</span>
+                <span class="emoji-item" onclick="addEmoji('⚽')">⚽</span>
+                <span class="emoji-item" onclick="addEmoji('🏆')">🏆</span>
+                <span class="emoji-item" onclick="addEmoji('😂')">😂</span>
+                <span class="emoji-item" onclick="addEmoji('🎮')">🎮</span>
+                <span class="emoji-item" onclick="addEmoji('👏')">👏</span>
+            </div>
+            <div style="padding: 15px; display: flex; gap: 10px; background: #0a0c10;">
+                <input type="text" id="chat-input" placeholder="Diga algo..." style="margin-bottom:0">
+                <button onclick="sendMsg()" style="background:var(--primary); border:none; border-radius:12px; padding:0 18px;"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
 
-        <nav class="nav-bar">
-            <div class="nav-link active" onclick="changeTab('lobby', this)"><i class="fas fa-users"></i>LOBBY</div>
-            <div class="nav-link" onclick="changeTab('copas', this)"><i class="fas fa-trophy"></i>COPAS</div>
-            <div class="nav-link" onclick="changeTab('arena', this)"><i class="fas fa-gamepad"></i>ARENA</div>
+        <nav class="bottom-nav">
+            <div class="nav-tab active" onclick="navTo('lobby', this)"><i class="fas fa-users-viewfinder"></i>LOBBY</div>
+            <div class="nav-tab" onclick="navTo('copas', this)"><i class="fas fa-trophy"></i>COPAS</div>
+            <div class="nav-tab" onclick="navTo('arena', this)"><i class="fas fa-gamepad"></i>ARENA</div>
+            <div class="nav-tab" onclick="toggleChat(true)"><i class="fas fa-comments"></i>CHAT</div>
         </nav>
     </div>
 
