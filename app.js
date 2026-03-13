@@ -1,31 +1,34 @@
 const auth = firebase.auth();
 const db = firebase.firestore();
 let me = null;
-let currentCopaId = null;
-let chatMode = 'global'; 
+let currentCid = null;
 let unreadCount = 0;
-let selectedCopaType = 'liga';
-let tempAvatar = '';
+let lastMsgTime = 0;
 
-// --- AVATARES ---
+// --- CONFIG AVATARES ---
 const AVATARS = [
-    {n: 'Messi', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163063.png'},
-    {n: 'CR7', u: 'https://cdn-icons-png.flaticon.com/512/3220/3220138.png'},
-    {n: 'Neymar', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163068.png'},
-    {n: 'Pele', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163073.png'},
-    {n: 'Mbappe', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163071.png'},
-    {n: 'Vini', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163069.png'},
-    {n: 'Leao', u: 'https://cdn-icons-png.flaticon.com/512/616/616412.png'},
-    {n: 'Macaco', u: 'https://cdn-icons-png.flaticon.com/512/616/616430.png'},
-    {n: 'Cachorro', u: 'https://cdn-icons-png.flaticon.com/512/616/616408.png'},
-    {n: 'Gato', u: 'https://cdn-icons-png.flaticon.com/512/616/616432.png'},
-    {n: 'Meme1', u: 'https://cdn-icons-png.flaticon.com/512/2613/2613143.png'},
-    {n: 'Meme2', u: 'https://cdn-icons-png.flaticon.com/512/3551/3551061.png'}
+    { n: 'Messi', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163063.png' },
+    { n: 'CR7', u: 'https://cdn-icons-png.flaticon.com/512/3220/3220138.png' },
+    { n: 'Neymar', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163068.png' },
+    { n: 'Vini Jr', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163069.png' },
+    { n: 'Mbappe', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163071.png' },
+    { n: 'Pele', u: 'https://cdn-icons-png.flaticon.com/512/1163/1163073.png' },
+    { n: 'Caveira', u: 'https://cdn-icons-png.flaticon.com/512/428/428172.png' },
+    { n: 'Bola', u: 'https://cdn-icons-png.flaticon.com/512/33/33736.png' },
+    { n: 'Leao', u: 'https://cdn-icons-png.flaticon.com/512/616/616412.png' },
+    { n: 'Macaco', u: 'https://cdn-icons-png.flaticon.com/512/616/616430.png' },
+    { n: 'Cachorro', u: 'https://cdn-icons-png.flaticon.com/512/616/616408.png' },
+    { n: 'Gato', u: 'https://cdn-icons-png.flaticon.com/512/616/616432.png' },
+    { n: 'Meme1', u: 'https://cdn-icons-png.flaticon.com/512/2613/2613143.png' },
+    { n: 'Meme2', u: 'https://cdn-icons-png.flaticon.com/512/3551/3551061.png' }
 ];
 
-// --- CORE ---
+// --- CORE UTILS ---
 setInterval(() => {
-    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
+    const d = new Date();
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if(document.getElementById('header-clock')) document.getElementById('header-clock').innerText = timeStr;
+    if(document.getElementById('auth-time')) document.getElementById('auth-time').innerText = d.toLocaleDateString() + ' ' + timeStr;
 }, 1000);
 
 function toggleAuth(t) {
@@ -33,20 +36,20 @@ function toggleAuth(t) {
     document.getElementById('screen-reg').classList.toggle('hidden', t === 'login');
 }
 
-function navTo(t, el) {
+function changeTab(t, el) {
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
     document.getElementById('tab-' + t).classList.remove('hidden');
     el.classList.add('active');
 }
 
-// --- AUTH ---
+// --- AUTH LOGIC ---
 auth.onAuthStateChanged(user => {
     if(user) {
         db.collection('usuarios').doc(user.uid).onSnapshot(doc => {
             me = { uid: user.uid, ...doc.data() };
-            document.getElementById('top-nick').innerText = me.nome;
-            if(me.foto) document.getElementById('top-avatar').style.backgroundImage = `url(${me.foto})`;
+            document.getElementById('user-nick-display').innerText = me.nome;
+            if(me.foto) document.getElementById('user-avatar-display').style.backgroundImage = `url(${me.foto})`;
             document.getElementById('auth-area').classList.add('hidden');
             document.getElementById('app-area').classList.remove('hidden');
             initApp();
@@ -59,7 +62,7 @@ auth.onAuthStateChanged(user => {
 
 function doLogin() {
     auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value)
-        .catch(e => alert("Erro ao entrar"));
+    .catch(() => alert("Credenciais incorretas"));
 }
 
 async function doRegister() {
@@ -69,54 +72,53 @@ async function doRegister() {
     if(!n || p.length < 6) return alert("Nick curto ou senha fraca");
     const res = await auth.createUserWithEmailAndPassword(e, p);
     await db.collection('usuarios').doc(res.user.uid).set({
-        nome: n, online: true, lastSeen: Date.now(), foto: '', stats: {vit:0, der:0, emp:0}, favs: []
+        nome: n, online: true, lastSeen: Date.now(), foto: AVATARS[0].u, 
+        stats: { vit: 0, der: 0, emp: 0 }, favs: [], convites_recebidos: 0
     });
 }
 
 function doLogout() {
-    db.collection('usuarios').doc(me.uid).update({online:false}).then(() => auth.signOut().then(()=>location.reload()));
+    db.collection('usuarios').doc(me.uid).update({ online: false }).then(() => auth.signOut().then(() => location.reload()));
 }
 
-// --- APP INIT ---
+// --- INIT ---
 function initApp() {
     loadLobby();
     loadCopas();
-    listenGlobalChat();
+    listenChat();
     listenInvites();
 }
 
-// --- LOBBY & RANKING ---
+// --- LOBBY & HALL OF FAME ---
 function loadLobby() {
     db.collection('usuarios').onSnapshot(snap => {
         let players = [];
-        snap.forEach(d => players.push({id: d.id, ...d.data()}));
-        
-        // Sorting: Online > Favs > Nick
-        players.sort((a,b) => (b.online - a.online) || (me.favs?.includes(b.id) - me.favs?.includes(a.id)));
+        snap.forEach(d => players.push({ id: d.id, ...d.data() }));
 
-        // Hall of Fame (Top 3)
-        const sortedRank = [...players].sort((a,b) => b.stats.vit - a.stats.vit);
-        document.getElementById('hall-fame').innerHTML = sortedRank.slice(0,3).map((p, i) => `
-            <div style="display:inline-block; text-align:center; width:30%; font-size:0.6rem">
-                <i class="fas fa-trophy ${i==0?'trophy-gold':i==1?'trophy-silver':'trophy-bronze'}" style="font-size:1.2rem"></i><br>
-                <strong>${p.nome}</strong><br>${p.stats.vit} Vit
+        // Hall of Fame
+        const hall = [...players].sort((a,b) => b.stats.vit - a.stats.vit).slice(0, 3);
+        document.getElementById('hall-fame-list').innerHTML = hall.map((p, i) => `
+            <div style="text-align:center">
+                <i class="fas fa-medal" style="color:${i==0?'#ffd700':i==1?'#c0c0c0':'#cd7f32'}"></i><br>
+                <small style="font-weight:800">${p.nome}</small><br><span style="font-size:0.6rem">${p.stats.vit}V</span>
             </div>
         `).join('');
 
-        // List
+        // Lobby List
+        players.sort((a, b) => (b.online - a.online) || (me.favs?.includes(b.id) - me.favs?.includes(a.id)));
         const list = document.getElementById('lobby-list');
         list.innerHTML = players.map(p => `
-            <div class="player-row">
-                <div style="display:flex; align-items:center; gap:10px" onclick="showPlayerInfo('${p.id}')">
-                    <div style="width:35px; height:35px; border-radius:50%; background:url(${p.foto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}); background-size:cover"></div>
+            <div class="rank-item">
+                <div style="display:flex; align-items:center; gap:10px" onclick="showPlayerStats('${p.id}')">
+                    <div style="width:35px; height:35px; border-radius:50%; background:url(${p.foto}); background-size:cover"></div>
                     <div>
-                        <div style="font-weight:800; font-size:0.8rem">${p.nome} ${p.online?'<span style="color:#0f8">●</span>':''}</div>
-                        <small style="color:var(--text-dim)">${p.stats.vit}V - ${p.stats.der}D</small>
+                        <div style="font-size:0.8rem; font-weight:800"><span class="status-dot" style="background:${p.online?'#0f8':'#555'}"></span>${p.nome}</div>
+                        <small style="color:var(--text-dim)">${p.stats.vit} Vitórias</small>
                     </div>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px">
-                    <i class="fa-star ${me.favs?.includes(p.id)?'fas active':'far'}" style="color:${me.favs?.includes(p.id)?'#ffbc00':'#444'}" onclick="toggleFav('${p.id}')"></i>
-                    ${p.id !== me.uid ? `<button class="btn-glow" style="width:auto; padding:5px 10px; font-size:0.6rem" onclick="inviteFromLobby('${p.id}')">CONVIDAR</button>` : ''}
+                <div style="display:flex; gap:12px; align-items:center">
+                    <i class="${me.favs?.includes(p.id)?'fas':'far'} fa-star" style="color:${me.favs?.includes(p.id)?'#ffbc00':'#444'}" onclick="toggleFav('${p.id}')"></i>
+                    ${p.id !== me.uid ? `<button class="btn-glow" style="width:auto; padding:5px 10px; font-size:0.5rem" onclick="inviteFromLobby('${p.id}')">CONVIDAR</button>` : ''}
                 </div>
             </div>
         `).join('');
@@ -124,43 +126,37 @@ function loadLobby() {
 }
 
 function toggleFav(id) {
-    let newFavs = me.favs || [];
-    if(newFavs.includes(id)) newFavs = newFavs.filter(x => x !== id);
-    else newFavs.push(id);
-    db.collection('usuarios').doc(me.uid).update({favs: newFavs});
+    let f = me.favs || [];
+    if(f.includes(id)) f = f.filter(x => x !== id);
+    else f.push(id);
+    db.collection('usuarios').doc(me.uid).update({ favs: f });
 }
 
 // --- COPAS ---
-function selectType(t) {
-    selectedCopaType = t;
-    document.getElementById('type-amistoso').style.borderColor = (t === 'amistoso' ? 'var(--primary)' : '#333');
-    document.getElementById('type-liga').style.borderColor = (t === 'liga' ? 'var(--primary)' : '#333');
-}
-
 async function createCopa() {
     const n = document.getElementById('c-nome').value;
-    if(!n) return alert("Nome da copa?");
-    const res = await db.collection('campeonatos').add({
-        nome: n, tipo: selectedCopaType, host: me.uid, 
-        p: [me.uid], status: 'aberto', 
-        tabela: { [me.uid]: {pts:0, v:0, e:0, d:0, sg:0, n:me.nome} },
-        data: Date.now()
+    const t = document.getElementById('c-tipo').value;
+    if(!n) return alert("Dê um nome à copa!");
+    const ref = await db.collection('campeonatos').add({
+        nome: n, tipo: t, host: me.uid, p: [me.uid], status: 'inscricao',
+        tabela: { [me.uid]: { pts: 0, v: 0, e: 0, d: 0, n: me.nome, time: '---' } },
+        jogos: [], data: Date.now()
     });
-    alert("Copa Criada!");
-    openArena(res.id);
+    alert("Copa criada! Convide seus amigos.");
+    openArena(ref.id);
 }
 
 function loadCopas() {
     db.collection('campeonatos').orderBy('data', 'desc').onSnapshot(snap => {
         const div = document.getElementById('copas-list');
-        div.innerHTML = "<h4 style='margin:15px 0'>Competições</h4>";
+        div.innerHTML = "<h4 style='margin:15px 0'>Ativas</h4>";
         snap.forEach(doc => {
             const c = doc.data();
             div.innerHTML += `
-                <div class="card" onclick="openArena('${doc.id}')" style="display:flex; justify-content:space-between">
-                    <div><strong>${c.nome}</strong><br><small>${c.tipo}</small></div>
-                    <div style="display:flex; gap:10px; align-items:center">
-                        <i class="fas fa-trash" style="color:#ff4757" onclick="deleteCopa(event, '${doc.id}')"></i>
+                <div class="card" onclick="openArena('${doc.id}')" style="display:flex; justify-content:space-between; align-items:center">
+                    <div><strong>${c.nome}</strong><br><small style="color:var(--primary)">${c.tipo}</small></div>
+                    <div style="display:flex; gap:10px">
+                        ${c.host === me.uid ? `<i class="fas fa-trash" style="color:var(--danger)" onclick="deleteCopa(event, '${doc.id}')"></i>` : ''}
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </div>`;
@@ -170,70 +166,131 @@ function loadCopas() {
 
 function deleteCopa(e, id) {
     e.stopPropagation();
-    if(confirm("Excluir campeonato?")) db.collection('campeonatos').doc(id).delete();
+    if(confirm("Deseja apagar este campeonato?")) db.collection('campeonatos').doc(id).delete();
 }
 
 function openArena(id) {
-    currentCopaId = id;
-    navTo('arena', document.querySelectorAll('.nav-item')[2]);
+    currentCid = id;
+    changeTab('arena', document.querySelectorAll('.nav-link')[2]);
     db.collection('campeonatos').doc(id).onSnapshot(doc => {
         if(!doc.exists) return;
         const c = doc.data();
-        document.getElementById('arena-header').innerHTML = `<h2 style="color:var(--primary)">${c.nome}</h2><p style="font-size:0.7rem">${c.p.length} Participantes</p>`;
-        switchArena('class');
+        document.getElementById('arena-header').innerHTML = `<h2 style="color:var(--primary)">${c.nome}</h2><p style="font-size:0.7rem">${c.p.length} Jogadores Inscritos</p>`;
+        
+        // Atualiza seletor de chat para incluir chat da copa
+        const sel = document.getElementById('chat-selector');
+        if(!sel.querySelector(`option[value="${id}"]`)) {
+            sel.innerHTML += `<option value="${id}">Copa: ${c.nome}</option>`;
+        }
+        
+        switchArena('tabela');
     });
 }
 
-function switchArena(tab) {
-    const body = document.getElementById('arena-body');
-    db.collection('campeonatos').doc(currentCopaId).get().then(doc => {
+function switchArena(mode) {
+    const content = document.getElementById('arena-content');
+    db.collection('campeonatos').doc(currentCid).get().then(doc => {
         const c = doc.data();
-        document.querySelectorAll('.arena-nav button').forEach(b => b.classList.remove('active'));
-        if(tab === 'class') {
-            document.getElementById('btn-tab-class').classList.add('active');
-            let rows = Object.entries(c.tabela).sort((a,b) => b[1].pts - a[1].pts);
-            body.innerHTML = `<table style="width:100%; text-align:center; margin-top:10px">
-                <tr style="color:var(--text-dim); font-size:0.7rem"><th>#</th><th>PLAYER</th><th>P</th><th>V</th><th>SG</th></tr>
-                ${rows.map(([id, s], i) => `<tr><td>${i+1}</td><td>${s.n}</td><td style="color:var(--primary)">${s.pts}</td><td>${s.v}</td><td>${s.sg}</td></tr>`).join('')}
-            </table>`;
-        } else if(tab === 'info') {
-            document.getElementById('btn-tab-info').classList.add('active');
-            body.innerHTML = `
-                <div class="card" style="margin-top:10px">
-                    <h4>Convidar Jogador</h4>
-                    <p style="font-size:0.6rem; color:var(--text-dim)">Envie um convite direto pelo Lobby.</p>
-                    <div style="margin-top:10px">
-                        ${c.p.map(pid => `<div style="font-size:0.8rem">✅ ${c.tabela[pid]?.n || 'Membro'}</div>`).join('')}
-                    </div>
-                </div>`;
+        if(mode === 'tabela') {
+            let h = `<table style="width:100%; text-align:center; font-size:0.8rem">
+                <tr style="color:var(--text-dim)"><th>#</th><th>PLAYER</th><th>PTS</th><th>V</th></tr>`;
+            const sorted = Object.entries(c.tabela).sort((a,b) => b[1].pts - a[1].pts);
+            sorted.forEach(([id, s], i) => {
+                h += `<tr><td>${i+1}</td><td>${s.n}</td><td style="color:var(--primary); font-weight:800">${s.pts}</td><td>${s.v}</td></tr>`;
+            });
+            content.innerHTML = h + `</table>`;
+        } else if(mode === 'convidar') {
+            content.innerHTML = `
+                <div class="card" style="text-align:center">
+                    <p style="font-size:0.8rem; margin-bottom:10px">Convide jogadores cadastrados:</p>
+                    <button class="btn-glow" style="margin-bottom:10px" onclick="inviteAll()">CONVIDAR TODOS DO LOBBY</button>
+                    <small>Ou use o botão "Convidar" na aba Lobby.</small>
+                </div>
+                ${c.host === me.uid && c.status === 'inscricao' ? `<button class="btn-glow" onclick="startDraw()">INICIAR SORTEIO E CAMPEONATO</button>` : ''}
+            `;
         }
     });
 }
 
-// --- CHAT LOGIC (CORRIGIDA) ---
-function toggleChatWindow() {
+// --- SORTEIO ANIMADO ---
+async function startDraw() {
+    document.getElementById('sorteio-overlay').classList.remove('hidden');
+    setTimeout(async () => {
+        const snap = await db.collection('campeonatos').doc(currentCid).get();
+        const c = snap.data();
+        const players = c.p;
+        let jogos = [];
+        
+        // Algoritmo de Sorteio (Pontos Corridos)
+        for(let i=0; i<players.length; i++) {
+            for(let j=i+1; j<players.length; j++) {
+                jogos.push({ p1: players[i], p2: players[j], n1: c.tabela[players[i]].n, n2: c.tabela[players[j]].n, g1: null, g2: null });
+            }
+        }
+
+        await db.collection('campeonatos').doc(currentCid).update({ status: 'ativo', jogos });
+        document.getElementById('sorteio-overlay').classList.add('hidden');
+        alert("Campeonato Iniciado!");
+    }, 3000);
+}
+
+// --- CONVITES ---
+async function inviteFromLobby(pid) {
+    if(!currentCid) return alert("Selecione uma copa na Arena primeiro!");
+    const target = await db.collection('usuarios').doc(pid).get();
+    if(target.data().convites_recebidos >= 5) return alert("Limite de convites para este usuário atingido!");
+
+    db.collection('convites').add({
+        para: pid, deNick: me.nome, cid: currentCid, copaNome: "Torneio", status: 'p', data: Date.now()
+    });
+    db.collection('usuarios').doc(pid).update({ convites_recebidos: firebase.firestore.FieldValue.increment(1) });
+    alert("Convite enviado!");
+}
+
+async function inviteAll() {
+    const snap = await db.collection('usuarios').get();
+    snap.forEach(d => { if(d.id !== me.uid) inviteFromLobby(d.id); });
+}
+
+function listenInvites() {
+    db.collection('convites').where('para', '==', me.uid).where('status', '==', 'p').onSnapshot(snap => {
+        snap.forEach(doc => {
+            const c = doc.data();
+            if(confirm(`${c.deNick} te convidou para participar da copa ${c.copaNome}. Aceitar?`)) {
+                db.collection('campeonatos').doc(c.cid).update({
+                    p: firebase.firestore.FieldValue.arrayUnion(me.uid),
+                    [`tabela.${me.uid}`]: { pts: 0, v: 0, e: 0, d: 0, n: me.nome, time: '---' }
+                });
+                db.collection('convites').doc(doc.id).update({ status: 'a' });
+            } else {
+                db.collection('convites').doc(doc.id).update({ status: 'r' });
+            }
+        });
+    });
+}
+
+// --- CHAT CORRIGIDO ---
+function toggleChat() {
     const box = document.getElementById('chat-box');
-    const isVisible = box.style.display === 'flex';
-    box.style.display = isVisible ? 'none' : 'flex';
-    if(!isVisible) {
-        unreadCount = 0;
-        document.getElementById('chat-badge').classList.add('hidden');
-    }
+    const isV = box.style.display === 'flex';
+    box.style.display = isV ? 'none' : 'flex';
+    if(!isV) { unreadCount = 0; document.getElementById('chat-badge').classList.add('hidden'); }
 }
 
-function setChatMode(m) {
-    chatMode = m;
-    document.getElementById('btn-chat-global').classList.toggle('active', m === 'global');
-    document.getElementById('btn-chat-copa').classList.toggle('active', m === 'copa');
-    renderMessages();
-}
-
-function listenGlobalChat() {
-    db.collection('chats').doc('global').collection('msgs').orderBy('t', 'desc').limit(30).onSnapshot(snap => {
-        if(chatMode === 'global') renderMessages();
-        if(document.getElementById('chat-box').style.display !== 'flex') {
-            unreadCount += snap.docChanges().filter(change => change.type === 'added').length;
-            if(unreadCount > 0) {
+function listenChat() {
+    db.collection('chat_global').orderBy('t', 'desc').limit(20).onSnapshot(snap => {
+        const box = document.getElementById('chat-msgs');
+        // Filtra para evitar o loop infinito
+        const newMsgs = snap.docs.filter(d => d.data().t > lastMsgTime).reverse();
+        if(newMsgs.length > 0) {
+            newMsgs.forEach(d => {
+                const m = d.data();
+                box.innerHTML += `<div class="msg-line"><strong>${m.u}:</strong> ${m.txt}</div>`;
+                lastMsgTime = m.t;
+            });
+            box.scrollTop = box.scrollHeight;
+            if(document.getElementById('chat-box').style.display !== 'flex') {
+                unreadCount += newMsgs.length;
                 document.getElementById('chat-badge').innerText = unreadCount;
                 document.getElementById('chat-badge').classList.remove('hidden');
             }
@@ -241,81 +298,46 @@ function listenGlobalChat() {
     });
 }
 
-async function renderMessages() {
-    const box = document.getElementById('chat-msgs');
-    const path = chatMode === 'global' ? db.collection('chats').doc('global').collection('msgs') : db.collection('campeonatos').doc(currentCopaId).collection('msgs');
-    
-    path.orderBy('t', 'asc').limitToLast(30).get().then(snap => {
-        box.innerHTML = snap.docs.map(d => {
-            const m = d.data();
-            return `<div style="margin-bottom:8px"><strong>${m.u}:</strong> ${m.txt}</div>`;
-        }).join('');
-        box.scrollTop = box.scrollHeight;
-    });
-}
-
-function sendChatMsg() {
+function sendMsg() {
     const txt = document.getElementById('chat-input').value;
     if(!txt) return;
-    const path = chatMode === 'global' ? db.collection('chats').doc('global').collection('msgs') : db.collection('campeonatos').doc(currentCopaId).collection('msgs');
-    path.add({ u: me.nome, txt, t: Date.now() });
+    db.collection('chat_global').add({ u: me.nome, txt, t: Date.now() });
     document.getElementById('chat-input').value = "";
-    setTimeout(renderMessages, 200);
 }
 
-// --- SETTINGS ---
-function openSettings() {
-    document.getElementById('modal-settings').classList.remove('hidden');
-    document.getElementById('set-nick').value = me.nome;
-    const grid = document.getElementById('avatar-selector');
-    grid.innerHTML = AVATARS.map(a => `
-        <div class="avatar-opt" style="background-image:url(${a.u})" onclick="selectAvatar('${a.u}', this)"></div>
+// --- PERFIL ---
+function openProfile() {
+    document.getElementById('modal-profile').classList.remove('hidden');
+    document.getElementById('new-nick').value = me.nome;
+    document.getElementById('profile-preview').style.backgroundImage = `url(${me.foto})`;
+    const list = document.getElementById('avatar-list');
+    list.innerHTML = AVATARS.map(a => `
+        <div class="av-item" style="background-image:url(${a.u})" onclick="selectAvatar('${a.u}', this)"></div>
     `).join('');
 }
 
 function selectAvatar(u, el) {
-    tempAvatar = u;
-    document.querySelectorAll('.avatar-opt').forEach(o => o.classList.remove('selected'));
+    document.querySelectorAll('.av-item').forEach(x => x.classList.remove('selected'));
     el.classList.add('selected');
-    document.getElementById('set-avatar-preview').style.backgroundImage = `url(${u})`;
+    document.getElementById('profile-preview').style.backgroundImage = `url(${u})`;
+    me.foto_temp = u;
 }
 
-async function saveSettings() {
-    const newNick = document.getElementById('set-nick').value;
-    const update = { nome: newNick };
-    if(tempAvatar) update.foto = tempAvatar;
+async function saveProfile() {
+    const nick = document.getElementById('new-nick').value;
+    const update = { nome: nick };
+    if(me.foto_temp) update.foto = me.foto_temp;
     await db.collection('usuarios').doc(me.uid).update(update);
-    closeSettings();
+    closeProfile();
 }
 
-function closeSettings() { document.getElementById('modal-settings').classList.add('hidden'); }
+function closeProfile() { document.getElementById('modal-profile').classList.add('hidden'); }
 
-// --- PRINT ---
-function saveAsImage() {
-    html2canvas(document.querySelector("#print-zone")).then(canvas => {
+function takePrint() {
+    html2canvas(document.querySelector("#print-area")).then(canvas => {
         const link = document.createElement('a');
-        link.download = 'copa-cajacity-result.png';
+        link.download = 'resultado-copa.png';
         link.href = canvas.toDataURL();
         link.click();
-    });
-}
-
-function inviteFromLobby(pid) {
-    if(!currentCopaId) return alert("Selecione uma copa na aba Arena antes de convidar!");
-    db.collection('convites').add({ para: pid, deNick: me.nome, deUid: me.uid, copaId: currentCopaId, copaNome: "Torneio", status: 'p' });
-    alert("Convite Enviado!");
-}
-
-function listenInvites() {
-    db.collection('convites').where('para', '==', me.uid).where('status', '==', 'p').onSnapshot(snap => {
-        snap.forEach(doc => {
-            if(confirm(`Desafio de ${doc.data().deNick}. Aceitar?`)) {
-                db.collection('campeonatos').doc(doc.data().copaId).update({
-                    p: firebase.firestore.FieldValue.arrayUnion(me.uid),
-                    [`tabela.${me.uid}`]: {pts:0, v:0, e:0, d:0, sg:0, n:me.nome}
-                });
-                db.collection('convites').doc(doc.id).update({status: 'a'});
-            }
-        });
     });
 }
