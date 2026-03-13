@@ -22,14 +22,11 @@
         .btn-primary { background: var(--gradient); border: none; padding: 16px; border-radius: 12px; color: #000; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
         .btn-sec { background: #252a33; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
         .hidden { display: none !important; }
+        .status-on { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 10px var(--primary); }
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1f26; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #333; z-index: 1000; }
         .nav-item { color: #888; text-decoration: none; font-size: 0.7rem; text-align: center; cursor: pointer; }
         .nav-item.active { color: var(--primary); }
-        .grid-times { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .time-card { background: #252a33; padding: 15px; text-align: center; border-radius: 12px; cursor: pointer; border: 2px solid transparent; }
-        .time-card img { width: 40px; height: 40px; margin-bottom: 8px; }
-        .time-card.selected { border-color: var(--primary); background: rgba(0, 255, 136, 0.1); }
-        .time-card.busy { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        .match-history-item { font-size: 0.8rem; background: #111; padding: 10px; border-radius: 8px; margin-top: 5px; border-left: 2px solid var(--secondary); }
     </style>
 </head>
 <body>
@@ -41,17 +38,17 @@
         </div>
         <div id="box-login" class="card">
             <h3 style="margin-bottom:20px; text-align: center;">LOGIN</h3>
-            <input type="email" id="email" placeholder="E-mail">
-            <input type="password" id="pass" placeholder="Senha">
-            <button class="btn-primary" onclick="handleLogin()">Entrar na Arena</button>
+            <input type="email" id="login-email" placeholder="E-mail">
+            <input type="password" id="login-pass" placeholder="Senha">
+            <button class="btn-primary" id="btn-entrar">ENTRAR NA ARENA</button>
             <p onclick="toggleAuth(true)" style="margin-top:20px; font-size:0.8rem; text-align:center; color:var(--primary); cursor:pointer">Não tem conta? <b>Cadastre Nick</b></p>
         </div>
         <div id="box-register" class="card hidden">
             <h3 style="margin-bottom:20px; text-align: center;">NOVO NICK</h3>
-            <input type="text" id="reg-nick" placeholder="Nome de Jogador (Ex: Filipe)">
-            <input type="email" id="reg-email" placeholder="E-mail">
+            <input type="text" id="reg-nick" placeholder="Nick de Jogador">
+            <input type="email" id="reg-email" placeholder="Seu E-mail">
             <input type="password" id="reg-pass" placeholder="Senha (mín. 6 dígitos)">
-            <button class="btn-primary" onclick="handleRegister()">Criar Conta</button>
+            <button class="btn-primary" id="btn-registrar">CRIAR CONTA</button>
             <p onclick="toggleAuth(false)" style="margin-top:20px; font-size:0.8rem; text-align:center; color:var(--primary); cursor:pointer">Já tem conta? <b>Logar</b></p>
         </div>
     </div>
@@ -59,74 +56,45 @@
     <div id="view-dash" class="hidden">
         <header>
             <div class="logo">Metasboard</div>
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Filipe" class="user-avatar" style="width:35px; border-radius:50%; border:2px solid var(--primary)" onclick="logout()">
+            <div id="user-status-header"><span class="status-on"></span> <span id="user-name">...</span></div>
         </header>
         <div class="container">
-            <h2 style="margin-bottom: 20px;">Fala, <span id="user-name" style="color:var(--primary)">...</span>!</h2>
-            <div id="area-convites" class="hidden">
-                <h4 style="color:var(--secondary); margin-bottom:10px;"><i class="fas fa-envelope-open-text"></i> Convites Recebidos</h4>
-                <div id="lista-convites"></div>
-            </div>
             <div class="card" style="border-left-color: var(--secondary)">
+                <h4><i class="fas fa-users"></i> Lobby Online</h4>
+                <div id="lobby-list" style="margin-top:10px; max-height: 150px; overflow-y: auto;">
+                    <p style="font-size: 0.8rem; color: #666;">Buscando jogadores...</p>
+                </div>
+            </div>
+
+            <div class="card">
                 <h4>Novo Campeonato</h4>
                 <input type="text" id="camp-name" placeholder="Nome do Torneio" style="margin-top:10px">
                 <select id="camp-game">
+                    <option value="PES 2018">PES 2018</option>
                     <option value="EA Sports FC 24">EA Sports FC 24</option>
-                    <option value="eFootball 2024">eFootball 2024</option>
                 </select>
                 <button class="btn-primary" onclick="createCamp()">Criar</button>
             </div>
-            <h4 style="margin: 20px 0 10px;">Meus Torneios</h4>
+
+            <h4>Meus Torneios</h4>
             <div id="lista-camps"></div>
         </div>
     </div>
 
     <div id="view-arena" class="hidden">
         <header>
-            <div class="logo" onclick="showView('view-dash')" style="cursor:pointer">← Dashboard</div>
-            <div id="arena-game-badge" style="font-size: 0.6rem; background: var(--primary); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold;">GAME</div>
+            <div class="logo" onclick="showView('view-dash')" style="cursor:pointer">← Voltar</div>
+            <h4 id="arena-title">Arena</h4>
         </header>
         <div class="container">
-            <h2 id="arena-title" style="text-align:center; margin-bottom:20px">---</h2>
-            <div style="display:flex; gap:8px; margin-bottom:20px">
-                <button class="btn-sec" style="flex:1" onclick="tabArena('tab-table', this)">Tabela</button>
-                <button class="btn-sec" style="flex:1" onclick="tabArena('tab-teams', this)">Times</button>
-                <button id="btn-admin" class="btn-sec hidden" style="flex:1; border-color:var(--accent)" onclick="tabArena('tab-admin', this)">Admin</button>
-            </div>
-
             <div id="tab-table">
                 <div class="card">
                     <h4>Classificação</h4>
-                    <div id="arena-players" style="margin-top:15px"></div>
-                </div>
-            </div>
-
-            <div id="tab-teams" class="hidden">
-                <div class="card">
-                    <h4>Escolha seu Time</h4>
-                    <select id="sel-liga" onchange="renderTeams()" style="margin-top:10px">
-                        <option value="br">Brasileirão Série A</option>
-                        <option value="eu">Ligas Europeias</option>
-                    </select>
-                    <div class="grid-times" id="grid-teams" style="margin-top:15px"></div>
-                </div>
-            </div>
-
-            <div id="tab-admin" class="hidden">
-                <div class="card">
-                    <h4>Convidar Jogadores</h4>
-                    <div id="list-all-users" style="max-height:200px; overflow-y:auto; margin-top:10px"></div>
+                    <div id="arena-players" style="margin-top:10px"></div>
                 </div>
                 <div class="card" style="border-left-color: var(--accent)">
-                    <h4>Registrar Placar</h4>
-                    <select id="res-p1" style="margin-top:10px"></select>
-                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px">
-                        <input type="number" id="gols-p1" placeholder="0" style="margin-bottom:0; text-align:center">
-                        <span>X</span>
-                        <input type="number" id="gols-p2" placeholder="0" style="margin-bottom:0; text-align:center">
-                    </div>
-                    <select id="res-p2"></select>
-                    <button class="btn-primary" onclick="saveMatch()" style="margin-top:10px">Salvar Resultado</button>
+                    <h4>Histórico de Partidas Detalhado</h4>
+                    <div id="arena-history"></div>
                 </div>
             </div>
         </div>
@@ -134,7 +102,6 @@
 
     <nav id="main-nav" class="bottom-nav hidden">
         <div class="nav-item active" onclick="showView('view-dash')"><i class="fas fa-home"></i><br>Home</div>
-        <div class="nav-item" onclick="alert('Ranking Global em breve!')"><i class="fas fa-chart-bar"></i><br>Ranking</div>
         <div class="nav-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><br>Sair</div>
     </nav>
 
