@@ -3,174 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Metasboard | Pro Edition</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Copa Cajacity | Metasboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #00ff88; --secondary: #00d4ff; --bg-dark: #0b0e11;
-            --bg-card: #151921; --text: #f5f5f5; --accent: #ff0055;
+            --primary: #00ff88; --secondary: #00d4ff; --bg: #080a0c;
+            --card: #12161b; --glass: rgba(255, 255, 255, 0.05);
+            --text: #ffffff; --text-dim: #a0a0a0;
             --grad: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+            --danger: #ff4757;
         }
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
-        body { background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; height: 100vh; }
         .hidden { display: none !important; }
 
-        /* Header & Perfil Expansível */
-        header { padding: 15px 20px; background: #1a1f26; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
-        .profile-trigger { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .avatar-circle { width: 35px; height: 35px; border-radius: 50%; background: var(--grad); border: 2px solid #333; overflow: hidden; }
+        /* --- AUTH SCREENS --- */
+        .auth-container { height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 30px; }
+        .logo-main { font-size: 2.5rem; font-weight: 800; letter-spacing: -2px; text-align: center; margin-bottom: 5px; }
+        .logo-accent { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        #side-menu { position: fixed; top: 0; right: -100%; width: 80%; height: 100%; background: #1a1f26; z-index: 200; transition: 0.4s; padding: 40px 20px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
-        #side-menu.active { right: 0; }
+        /* --- APP HEADER --- */
+        header { 
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(8, 10, 12, 0.85); backdrop-filter: blur(15px);
+            position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--glass);
+        }
+        .user-pill { 
+            background: var(--card); padding: 5px 12px; border-radius: 20px; 
+            display: flex; align-items: center; gap: 8px; border: 1px solid var(--glass); cursor: pointer;
+        }
+        .avatar-box { width: 28px; height: 28px; border-radius: 50%; background: var(--grad); }
 
-        /* Container Principal */
-        .app-content { padding: 20px; max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
-        .card { background: var(--bg-card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid #2a2f3a; position: relative; overflow: hidden; }
+        /* --- SIDEBAR PERFIL --- */
+        #profile-sidebar {
+            position: fixed; top: 0; right: -100%; width: 85%; height: 100%;
+            background: var(--card); z-index: 1000; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 40px 25px; box-shadow: -20px 0 50px rgba(0,0,0,0.9);
+        }
+        #profile-sidebar.active { right: 0; }
+        .close-sidebar { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; color: var(--text-dim); }
+
+        /* --- CARDS & UI --- */
+        .card { 
+            background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 15px;
+            border: 1px solid var(--glass); position: relative;
+        }
+        .btn-main { 
+            background: var(--grad); border: none; padding: 16px; border-radius: 14px;
+            width: 100%; font-weight: 800; color: #000; cursor: pointer; transition: 0.2s;
+        }
+        .btn-main:active { transform: scale(0.96); opacity: 0.9; }
         
-        /* Sistema de Chat */
-        #chat-window { position: fixed; bottom: 85px; right: 20px; width: 300px; height: 400px; background: #1a1f26; border-radius: 12px; border: 1px solid var(--primary); display: flex; flex-direction: column; z-index: 50; }
-        #messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 0.85rem; }
-        .msg { margin-bottom: 8px; padding: 8px; border-radius: 8px; background: #252a33; max-width: 80%; }
-        .msg.me { align-self: flex-end; background: var(--primary); color: #000; }
+        input, select, textarea { 
+            width: 100%; background: rgba(255,255,255,0.03); border: 1px solid #2a2f3a; 
+            padding: 14px; border-radius: 12px; color: #fff; margin-bottom: 12px; font-size: 1rem;
+        }
 
-        /* Navegação Inferior */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #1a1f26; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #333; z-index: 150; }
-        .nav-btn { color: #666; font-size: 1.2rem; cursor: pointer; transition: 0.3s; text-align: center; flex: 1; }
-        .nav-btn.active { color: var(--primary); }
-        .nav-btn span { display: block; font-size: 0.6rem; margin-top: 4px; font-weight: bold; }
+        /* --- CHAT FLUTUANTE --- */
+        #chat-trigger {
+            position: fixed; bottom: 95px; right: 20px; width: 56px; height: 56px;
+            background: var(--grad); border-radius: 28px; display: flex; align-items: center;
+            justify-content: center; font-size: 1.4rem; color: #000; z-index: 99; box-shadow: 0 8px 20px rgba(0,255,136,0.3);
+        }
+        #chat-box {
+            position: fixed; bottom: 95px; right: 20px; width: 320px; height: 450px;
+            background: var(--card); border-radius: 20px; z-index: 101; display: none;
+            flex-direction: column; border: 1px solid var(--primary); box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
 
-        /* Tabelas e Animações */
-        table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 12px; text-align: center; border-bottom: 1px solid #222; }
-        tr { transition: transform 0.5s ease; }
-        .live-tag { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; animation: pulse 1.5s infinite; }
+        /* --- BOTTOM NAV --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; height: 80px;
+            background: rgba(18, 22, 27, 0.95); backdrop-filter: blur(20px);
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid var(--glass); padding-bottom: 15px; z-index: 90;
+        }
+        .nav-item { color: var(--text-dim); text-align: center; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 1.3rem; display: block; margin-bottom: 5px; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #0b0e13; color: #fff; }
-        .btn { background: var(--grad); color: #000; padding: 12px; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; }
+        /* --- TABELAS --- */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; padding: 10px; }
+        td { padding: 15px 10px; text-align: center; border-bottom: 1px solid var(--glass); }
+        .pos { font-weight: 800; color: var(--secondary); }
     </style>
 </head>
 <body>
 
-    <div id="view-auth" class="app-content">
-        <div style="text-align: center; margin: 50px 0;">
-            <h1 style="font-weight: 800; letter-spacing: 5px; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">METASBOARD</h1>
-        </div>
-        <div class="card">
+    <div id="view-auth" class="auth-container">
+        <h1 class="logo-main">COPA <span class="logo-accent">CAJACITY</span></h1>
+        <p style="text-align: center; color: var(--text-dim); margin-bottom: 40px; font-size: 0.9rem;">Metasboard Experience</p>
+        
+        <div id="auth-login">
             <input type="email" id="login-email" placeholder="E-mail">
             <input type="password" id="login-pass" placeholder="Senha">
-            <button class="btn" id="btn-entrar">ENTRAR</button>
-            <p style="text-align:center; margin-top:15px; font-size:0.8rem" onclick="document.getElementById('view-auth').classList.add('hidden'); document.getElementById('view-reg').classList.remove('hidden')">Não tem Nick? Cadastre-se</p>
+            <button class="btn-main" onclick="handleLogin()">ENTRAR NA ARENA</button>
+            <p onclick="toggleAuth(true)" style="text-align:center; margin-top:20px; font-size:0.85rem">Novo por aqui? <span class="logo-accent">Criar Nick</span></p>
         </div>
-    </div>
 
-    <div id="view-reg" class="app-content hidden">
-        <div class="card">
+        <div id="auth-reg" class="hidden">
             <input type="text" id="reg-nick" placeholder="Seu Nick">
             <input type="email" id="reg-email" placeholder="E-mail">
-            <input type="password" id="reg-pass" placeholder="Senha">
-            <button class="btn" id="btn-registrar">CRIAR CONTA</button>
+            <input type="password" id="reg-pass" placeholder="Senha (mín. 6)">
+            <button class="btn-main" onclick="handleRegister()">CRIAR CONTA</button>
+            <p onclick="toggleAuth(false)" style="text-align:center; margin-top:20px; font-size:0.85rem">Já tem conta? <span class="logo-accent">Fazer Login</span></p>
         </div>
     </div>
 
-    <div id="view-main" class="hidden">
+    <div id="view-app" class="hidden">
         <header>
-            <div style="font-weight: 800; font-size: 0.9rem;">METAS<span style="color:var(--primary)">BOARD</span></div>
-            <div class="profile-trigger" onclick="toggleMenu(true)">
-                <span id="display-nick" style="font-size:0.8rem; font-weight:600">---</span>
-                <div class="avatar-circle" id="user-avatar"></div>
+            <div style="font-weight: 800; font-size: 1.1rem;">COPA <span class="logo-accent">CAJACITY</span></div>
+            <div class="user-pill" onclick="toggleSidebar(true)">
+                <span id="header-nick">---</span>
+                <div class="avatar-box" id="header-avatar"></div>
             </div>
         </header>
 
-        <div id="side-menu">
-            <div onclick="toggleMenu(false)" style="float:right; font-size:1.5rem">×</div>
-            <h3 style="margin-bottom:20px">Meu Perfil</h3>
+        <div id="profile-sidebar">
+            <div class="close-sidebar" onclick="toggleSidebar(false)"><i class="fas fa-times"></i></div>
+            <h2 style="margin-bottom: 30px;">Meu Perfil</h2>
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div id="profile-avatar-large" style="width: 80px; height: 80px; border-radius: 50%; background: var(--grad); margin: 0 auto 15px; border: 3px solid #333; background-size: cover;"></div>
+                <h3 id="profile-name-display">Nick</h3>
+            </div>
+            <label>Link da Foto:</label>
+            <input type="text" id="edit-avatar" placeholder="URL da imagem">
             <label>Alterar Nick:</label>
             <input type="text" id="edit-nick" placeholder="Novo Nick">
-            <label>URL da Foto:</label>
-            <input type="text" id="edit-photo" placeholder="Link da imagem">
-            <button class="btn" onclick="updateProfile()" style="margin-top:10px">SALVAR ALTERAÇÕES</button>
-            <button class="btn" onclick="logout()" style="margin-top:40px; background: #333; color: white;">SAIR DA CONTA</button>
+            <button class="btn-main" onclick="updateProfile()">SALVAR</button>
+            <button class="btn-main" onclick="handleLogout()" style="margin-top: 30px; background: #1e2229; color: var(--danger);">SAIR DA CONTA</button>
         </div>
 
-        <div class="app-content">
+        <main style="padding: 20px; padding-bottom: 120px;">
             <div id="tab-lobby" class="tab-content">
-                <div class="card">
-                    <h4><i class="fas fa-satellite"></i> Jogadores Online</h4>
-                    <div id="lobby-users" style="margin-top:15px"></div>
-                </div>
-                
-                <div class="card">
-                    <h4><i class="fas fa-comments"></i> Chat Geral</h4>
-                    <div id="messages" style="height: 200px; border: 1px solid #333; margin: 10px 0;"></div>
-                    <div style="display:flex; gap:5px">
-                        <input type="text" id="chat-input" placeholder="Mensagem...">
-                        <button class="btn" style="width: 60px;" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                </div>
+                <h3 style="margin-bottom: 20px;">Lobby Online</h3>
+                <div id="online-list"></div>
             </div>
 
             <div id="tab-comp" class="tab-content hidden">
                 <div class="card">
-                    <h4>Criar Campeonato</h4>
-                    <input type="text" id="cp-name" placeholder="Nome da Competição">
-                    <select id="cp-type">
+                    <h4>Criar Novo Campeonato</h4>
+                    <input type="text" id="new-cp-name" placeholder="Nome da Copa">
+                    <select id="new-cp-type">
                         <option value="liga">Pontos Corridos</option>
-                        <option value="champions">Liga + Mata-Mata (Estilo Champions)</option>
+                        <option value="champions">Liga + Mata-Mata</option>
                     </select>
-                    <label>Número de Jogadores:</label>
-                    <input type="number" id="cp-size" value="8">
-                    <label>Regras do Host:</label>
-                    <textarea id="cp-rules" placeholder="Ex: Proibido replay, 5 min de jogo..."></textarea>
-                    <button class="btn" onclick="initComp()">LANÇAR COMPETIÇÃO</button>
+                    <textarea id="new-cp-rules" placeholder="Regras (Ex: 5min, Times Livres...)"></textarea>
+                    <button class="btn-main" onclick="createNewCamp()">LANÇAR NOVO</button>
                 </div>
-                <div id="my-competitions"></div>
+                <div id="camps-list"></div>
             </div>
 
-            <div id="arena-view" class="hidden">
-                <div class="card">
-                    <h2 id="arena-name" style="text-align:center; color:var(--primary)"></h2>
-                    <p id="arena-rules-display" style="font-size:0.7rem; color:#888; text-align:center; margin-bottom:15px"></p>
-                    
-                    <div style="display:flex; gap:10px; margin-bottom:15px">
-                        <button class="btn-sec" onclick="setArenaTab('table')">Tabela</button>
-                        <button class="btn-sec" onclick="setArenaTab('matches')">Jogos</button>
-                        <button id="host-panel-btn" class="btn-sec hidden" style="border-color:var(--accent)" onclick="setArenaTab('admin')">Host</button>
-                    </div>
-
-                    <div id="arena-table">
-                        <table id="main-table">
-                            <thead><tr><th>Pos</th><th>Nick</th><th>P</th><th>V</th><th>SG</th></tr></thead>
-                            <tbody id="table-data"></tbody>
-                        </table>
-                    </div>
-
-                    <div id="arena-matches" class="hidden"></div>
-
-                    <div id="arena-admin" class="hidden">
-                        <div id="invite-section">
-                            <h5>Convidar Jogadores (Faltam: <span id="slots-count"></span>)</h5>
-                            <div id="invite-pool"></div>
-                        </div>
-                        <div id="score-section" class="hidden">
-                            <h5>Atualizar Placar</h5>
-                            <select id="adm-m1"></select>
-                            <input type="number" id="adm-g1" placeholder="Gols">
-                            <input type="number" id="adm-g2" placeholder="Gols">
-                            <select id="adm-m2"></select>
-                            <button class="btn" onclick="submitScore()">PUBLICAR RESULTADO</button>
-                        </div>
-                    </div>
+            <div id="tab-arena" class="tab-content hidden">
+                <div id="arena-active-content">
+                    <p style="text-align:center; color: var(--text-dim); margin-top: 50px;">Selecione um campeonato na aba Copas.</p>
                 </div>
+            </div>
+        </main>
+
+        <div id="chat-trigger" onclick="toggleChat(true)"><i class="fas fa-comment-dots"></i></div>
+        <div id="chat-box">
+            <div style="padding: 15px; border-bottom: 1px solid var(--glass); display: flex; justify-content: space-between;">
+                <span style="font-weight: 800;">GLOBAL CHAT</span>
+                <i class="fas fa-chevron-down" onclick="toggleChat(false)" style="cursor:pointer"></i>
+            </div>
+            <div id="chat-msgs" style="flex:1; overflow-y:auto; padding: 15px; font-size: 0.85rem;"></div>
+            <div style="padding: 10px; display: flex; gap: 8px;">
+                <input type="text" id="chat-input" placeholder="Sua mensagem..." style="margin-bottom:0">
+                <button onclick="sendMsg()" style="background: var(--primary); border:none; border-radius:10px; padding:0 15px;"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
 
-        <nav class="nav-bar">
-            <div class="nav-btn active" id="nav-lobby" onclick="switchTab('lobby')"><i class="fas fa-globe"></i><span>LOBBY</span></div>
-            <div class="nav-btn" id="nav-comp" onclick="switchTab('comp')"><i class="fas fa-trophy"></i><span>COPAS</span></div>
-            <div class="nav-btn" id="nav-matches" onclick="switchTab('matches')"><i class="fas fa-gamepad"></i><span>ARENA</span></div>
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('lobby', this)"><i class="fas fa-users"></i>LOBBY</div>
+            <div class="nav-item" onclick="switchTab('comp', this)"><i class="fas fa-trophy"></i>COPAS</div>
+            <div class="nav-item" onclick="switchTab('arena', this)"><i class="fas fa-gamepad"></i>ARENA</div>
         </nav>
     </div>
 
@@ -186,7 +196,7 @@
             messagingSenderId: "922666284836",
             appId: "1:922666284836:web:4bd0e3e8a6600e0dd7a5b1"
         };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
     </script>
     <script src="app.js"></script>
 </body>
