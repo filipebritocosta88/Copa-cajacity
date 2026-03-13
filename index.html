@@ -13,181 +13,125 @@
             --gradient: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-light); padding-bottom: 90px; overflow-x: hidden; }
-        
-        /* Utilitários */
+        body { background-color: var(--bg-dark); color: var(--text-light); padding-bottom: 90px; }
         .container { padding: 20px; max-width: 600px; margin: 0 auto; }
         .card { background: var(--bg-card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border-left: 4px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .hidden { display: none !important; }
         .logo { font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 2px; }
-        
-        /* Header */
         header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(26, 31, 38, 0.95); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
-        .user-info { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
-        .status-dot { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 10px var(--primary); }
-
-        /* Forms */
+        .status-dot { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--primary); }
         input, select { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 10px; border: 1px solid #333; background: #0b0e13; color: white; font-size: 1rem; }
-        input:focus { border-color: var(--primary); outline: none; }
-        .btn-primary { background: var(--gradient); border: none; padding: 16px; border-radius: 12px; color: #000; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; margin-top: 10px; }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-sec { background: #252a33; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
-        
-        /* Lobby & Listas */
-        .lobby-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #111; border-radius: 10px; margin-bottom: 8px; border-right: 3px solid var(--primary); }
-        .badge { background: var(--primary); color: #000; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
-
-        /* Tabela de Classificação */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+        .btn-primary { background: var(--gradient); border: none; padding: 16px; border-radius: 12px; color: #000; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .btn-sec { background: #252a33; color: white; border: 1px solid #444; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.8rem; }
         th { text-align: left; color: #888; padding-bottom: 10px; }
         td { padding: 12px 5px; border-bottom: 1px solid #333; }
-        .pos { font-weight: bold; color: var(--secondary); }
-
-        /* Histórico Detalhado */
         .match-card { background: #0b0e13; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent); }
-        .match-score { display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 1.2rem; font-weight: 800; margin: 10px 0; }
-        .match-date { font-size: 0.7rem; color: #666; text-align: center; }
-
-        /* Nav */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1f26; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #333; z-index: 1000; }
-        .nav-item { color: #888; text-decoration: none; font-size: 0.7rem; text-align: center; cursor: pointer; flex: 1; }
-        .nav-item i { font-size: 1.4rem; margin-bottom: 4px; }
+        .nav-item { color: #888; text-align: center; cursor: pointer; flex: 1; font-size: 0.7rem; }
         .nav-item.active { color: var(--primary); }
     </style>
 </head>
 <body>
 
     <div id="view-auth" class="container">
-        <div style="text-align:center; margin: 80px 0 40px;">
-            <h1 class="logo" style="font-size: 3rem;">Cajacity</h1>
-            <p style="color: #666; font-size: 0.8rem; letter-spacing: 5px;">METASBOARD v2.0</p>
+        <div style="text-align:center; margin: 50px 0 30px;">
+            <h1 class="logo" style="font-size: 2.5rem;">Cajacity</h1>
+            <p style="color:#666; font-size:0.8rem; letter-spacing:4px">METASBOARD v2.0</p>
         </div>
-        
         <div id="box-login" class="card">
-            <h3 style="margin-bottom:20px; text-align: center;">BEM-VINDO DE VOLTA</h3>
+            <h3 style="text-align:center; margin-bottom:20px">LOGIN</h3>
             <input type="email" id="login-email" placeholder="E-mail">
             <input type="password" id="login-pass" placeholder="Senha">
-            <button class="btn-primary" id="btn-login-action">Entrar na Arena</button>
-            <p onclick="toggleAuth(true)" style="margin-top:20px; font-size:0.9rem; text-align:center; color:var(--primary); cursor:pointer">Não tem um Nick? <b>Cadastre-se</b></p>
+            <button class="btn-primary" onclick="handleLogin()">Entrar na Arena</button>
+            <p onclick="toggleAuth(true)" style="text-align:center; margin-top:15px; color:var(--primary); cursor:pointer">Criar novo Nick</p>
         </div>
-
-        <div id="box-register" class="card hidden" style="border-left-color: var(--secondary)">
-            <h3 style="margin-bottom:20px; text-align: center;">CRIAR PERFIL ÚNICO</h3>
-            <input type="text" id="reg-nick" placeholder="Nick do Jogador (Ex: FilipeBR)">
+        <div id="box-register" class="card hidden">
+            <h3 style="text-align:center; margin-bottom:20px">CADASTRO</h3>
+            <input type="text" id="reg-nick" placeholder="Nick Único">
             <input type="email" id="reg-email" placeholder="E-mail">
-            <input type="password" id="reg-pass" placeholder="Senha (mín. 6 dígitos)">
-            <button class="btn-primary" id="btn-register-action" style="background: var(--secondary); color: white">Criar Minha Conta</button>
-            <p onclick="toggleAuth(false)" style="margin-top:20px; font-size:0.9rem; text-align:center; color:var(--secondary); cursor:pointer">Já sou da casa? <b>Fazer Login</b></p>
+            <input type="password" id="reg-pass" placeholder="Senha (mín. 6)">
+            <button class="btn-primary" onclick="handleRegister()">Registrar Jogador</button>
+            <p onclick="toggleAuth(false)" style="text-align:center; margin-top:15px; color:var(--primary); cursor:pointer">Já tenho conta</p>
         </div>
     </div>
 
     <div id="view-dash" class="hidden">
         <header>
             <div class="logo">Metasboard</div>
-            <div class="user-info">
-                <span class="status-dot"></span>
-                <span id="display-nick">...</span>
-                <i class="fas fa-sign-out-alt" onclick="logout()" style="margin-left:10px; color:var(--accent); cursor:pointer"></i>
-            </div>
+            <div><span class="status-dot"></span> <span id="user-nick">...</span></div>
         </header>
-
         <div class="container">
             <div class="card" style="border-left-color: var(--secondary)">
-                <h4><i class="fas fa-satellite-dish"></i> Lobby Online</h4>
-                <p style="font-size:0.7rem; color:#888; margin-bottom:10px">Jogadores disponíveis para convite agora:</p>
-                <div id="lobby-players"></div>
+                <h4>Lobby Online</h4>
+                <div id="lobby-list" style="margin-top:10px"></div>
             </div>
-
             <div id="area-convites" class="hidden">
-                <h4 style="color:var(--accent); margin-bottom:10px"><i class="fas fa-envelope-open-text"></i> Convites de Torneio</h4>
+                <h4 style="color:var(--accent)">Convites</h4>
                 <div id="lista-convites"></div>
             </div>
-
             <div class="card">
-                <h4><i class="fas fa-plus-circle"></i> Novo Campeonato</h4>
+                <h4>Novo Campeonato</h4>
                 <input type="text" id="camp-name" placeholder="Nome da Copa" style="margin-top:10px">
                 <select id="camp-game">
-                    <option value="PES 2018">PES 2018 (PS3)</option>
-                    <option value="EA Sports FC 24">EA Sports FC 24</option>
-                    <option value="eFootball 2024">eFootball 2024</option>
+                    <option value="PES 2018">PES 2018</option>
+                    <option value="EA FC 24">EA FC 24</option>
                 </select>
-                <button class="btn-primary" onclick="createCamp()">Criar Campeonato</button>
+                <button class="btn-primary" onclick="createCamp()">Criar</button>
             </div>
-
-            <h4 style="margin: 20px 0 10px">Meus Torneios Ativos</h4>
+            <h4>Minhas Copas</h4>
             <div id="lista-camps"></div>
         </div>
     </div>
 
     <div id="view-arena" class="hidden">
         <header>
-            <div class="logo" onclick="showView('view-dash')" style="cursor:pointer"><i class="fas fa-chevron-left"></i> Voltar</div>
-            <span id="arena-game-label" class="badge">GAME</span>
+            <div class="logo" onclick="showView('view-dash')">← Voltar</div>
+            <span id="arena-title" class="logo" style="font-size:0.9rem">---</span>
         </header>
-
         <div class="container">
-            <h2 id="arena-title" style="text-align:center; margin-bottom:20px; text-transform:uppercase">---</h2>
-
-            <div style="display:flex; gap:5px; margin-bottom:20px">
-                <button class="btn-sec" style="flex:1" id="btn-tab-table" onclick="changeArenaTab('table')">Classificação</button>
-                <button class="btn-sec" style="flex:1" id="btn-tab-matches" onclick="changeArenaTab('matches')">Histórico</button>
-                <button class="btn-sec hidden" style="flex:1; border-color:var(--accent)" id="btn-tab-admin" onclick="changeArenaTab('admin')">Painel Admin</button>
+            <div style="display:flex; gap:10px; margin-bottom:20px">
+                <button class="btn-sec" onclick="tabArena('tab-table')">Tabela</button>
+                <button class="btn-sec" onclick="tabArena('tab-hist')">Histórico</button>
+                <button id="btn-admin" class="btn-sec hidden" style="border-color:var(--accent)" onclick="tabArena('tab-admin')">Admin</button>
             </div>
 
-            <div id="arena-tab-table">
+            <div id="tab-table">
                 <div class="card">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>JOGADOR</th>
-                                <th>P</th>
-                                <th>V</th>
-                                <th>E</th>
-                                <th>D</th>
-                                <th>SG</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>#</th><th>NICK</th><th>P</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr></thead>
                         <tbody id="table-body"></tbody>
                     </table>
                 </div>
             </div>
 
-            <div id="arena-tab-matches" class="hidden">
-                <div id="arena-history-list"></div>
+            <div id="tab-hist" class="hidden">
+                <div id="history-list"></div>
             </div>
 
-            <div id="arena-tab-admin" class="hidden">
+            <div id="tab-admin" class="hidden">
                 <div class="card" style="border-left-color: var(--accent)">
-                    <h4 style="margin-bottom:15px">Registrar Nova Partida</h4>
-                    <select id="adm-p1"></select>
-                    <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:12px">
-                        <input type="number" id="adm-g1" placeholder="0" style="text-align:center; margin:0; font-size:1.5rem">
+                    <h4>Registrar Placar</h4>
+                    <select id="adm-p1" style="margin-top:10px"></select>
+                    <div style="display:flex; gap:10px; align-items:center">
+                        <input type="number" id="adm-g1" placeholder="0" style="text-align:center">
                         <span>X</span>
-                        <input type="number" id="adm-g2" placeholder="0" style="text-align:center; margin:0; font-size:1.5rem">
+                        <input type="number" id="adm-g2" placeholder="0" style="text-align:center">
                     </div>
                     <select id="adm-p2"></select>
-                    <button class="btn-primary" onclick="submitMatch()">Salvar Resultado</button>
+                    <button class="btn-primary" onclick="saveMatch()">Salvar Partida</button>
                 </div>
-                
                 <div class="card">
-                    <h4>Convidar Jogadores</h4>
-                    <div id="admin-invite-list" style="margin-top:10px"></div>
+                    <h4>Convidar</h4>
+                    <div id="admin-user-list"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <nav id="main-nav" class="bottom-nav hidden">
-        <div class="nav-item active" onclick="showView('view-dash')">
-            <i class="fas fa-home"></i><br>Início
-        </div>
-        <div class="nav-item" onclick="alert('Ranking Global de Vitórias: Em breve!')">
-            <i class="fas fa-trophy"></i><br>Ranking
-        </div>
-        <div class="nav-item" onclick="logout()">
-            <i class="fas fa-user-circle"></i><br>Perfil
-        </div>
+        <div class="nav-item active" onclick="showView('view-dash')"><i class="fas fa-home"></i><br>Home</div>
+        <div class="nav-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><br>Sair</div>
     </nav>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
