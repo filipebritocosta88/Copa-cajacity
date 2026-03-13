@@ -3,164 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Metasboard | Copa Cajacity</title>
+    <title>Copa Cajacyte | Elite Tournament</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
-            --primary: #00ff88; --secondary: #00d4ff; --bg: #05070a;
-            --card: #0f1217; --glass: rgba(255, 255, 255, 0.03);
-            --text: #ffffff; --text-dim: #8a8d91;
-            --grad: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+            --primary: #d4af37; /* Dourado */
+            --primary-glow: rgba(212, 175, 55, 0.3);
+            --bg: #050505;
+            --card: #111111;
+            --glass: rgba(255, 255, 255, 0.03);
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --grad: linear-gradient(135deg, #d4af37 0%, #f9e295 100%);
             --danger: #ff4757;
         }
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; width: 100vw; }
         .hidden { display: none !important; }
 
-        /* --- UI COMPONENTS --- */
-        main { height: calc(100vh - 160px); overflow-y: auto; padding: 15px; }
-        .card { background: var(--card); border-radius: 20px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--glass); }
-        .btn-glow { background: var(--grad); border:none; padding: 14px; border-radius: 12px; width: 100%; font-weight: 800; color:#000; cursor:pointer; text-transform: uppercase; }
-        input, select { width: 100%; background: #161a20; border: 1px solid #2a2f36; padding: 14px; border-radius: 12px; color: #fff; margin-bottom: 10px; }
+        /* --- UI PREMIUM --- */
+        main { height: calc(100vh - 160px); overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
+        .card { background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 15px; border: 1px solid var(--glass); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .btn-glow { background: var(--grad); border:none; padding: 15px; border-radius: 14px; width: 100%; font-weight: 800; color:#000; cursor:pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; }
+        .btn-glow:active { transform: scale(0.95); }
+        
+        /* --- HEADER --- */
+        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass); }
+        .logo-text { font-weight: 800; font-size: 1.2rem; letter-spacing: -1px; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        /* --- ESCUDOS GRID --- */
-        .teams-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; }
-        .team-opt { width: 100%; aspect-ratio: 1; border-radius: 10px; background: #1a1e24; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; }
-        .team-opt img { width: 70%; height: 70%; object-fit: contain; }
-        .team-opt.selected { border-color: var(--primary); background: rgba(0,255,136,0.1); }
+        /* --- LOBBY & PLAYERS --- */
+        .player-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--glass); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px currentColor; }
 
-        /* --- POPUP ANIMADO --- */
-        #invite-popup { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-150%); width: 90%; max-width: 350px; background: var(--card); border: 2px solid var(--primary); border-radius: 20px; padding: 20px; z-index: 9999; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        #invite-popup.show { transform: translateX(-50%) translateY(0); }
-
-        /* --- JOGOS / ARENA --- */
-        .match-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--glass); }
-        .match-team { text-align: center; flex: 1; }
-        .match-team img { width: 30px; height: 30px; display: block; margin: 0 auto 5px; }
-        .match-score { background: #000; padding: 8px 15px; border-radius: 10px; font-weight: 800; font-size: 1.1rem; color: var(--primary); cursor: pointer; }
+        /* --- CHAT SYSTEM --- */
+        #chat-wrapper { position: fixed; bottom: 100px; right: 20px; z-index: 1000; }
+        #chat-bubble { width: 60px; height: 60px; background: var(--grad); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 1.5rem; cursor: pointer; box-shadow: 0 5px 20px var(--primary-glow); }
+        #chat-box { width: 320px; height: 400px; background: var(--card); border: 1px solid var(--primary); border-radius: 25px; display: none; flex-direction: column; overflow: hidden; position: absolute; bottom: 70px; right: 0; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        #chat-msgs { flex: 1; overflow-y: auto; padding: 15px; font-size: 0.85rem; }
+        .msg { margin-bottom: 10px; line-height: 1.4; }
+        .msg b { color: var(--primary); }
 
         /* --- NAVIGATION --- */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; height: 80px; background: #0a0c10; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--glass); }
-        .nav-link { color: #444; font-size: 0.65rem; font-weight: 800; text-align: center; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; height: 85px; background: #080808; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--glass); padding-bottom: 15px; }
+        .nav-link { color: #555; font-size: 0.7rem; font-weight: 700; text-align: center; transition: 0.3s; }
         .nav-link.active { color: var(--primary); }
-        .nav-link i { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+        .nav-link i { font-size: 1.5rem; display: block; margin-bottom: 5px; }
 
-        /* --- SORTEIO ANIMADO --- */
-        #sorteio-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .sorteio-box { width: 120px; height: 120px; background: var(--grad); border-radius: 25px; animation: shake 0.3s infinite; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #000; }
-        @keyframes shake { 0%{transform: rotate(0deg)} 25%{transform: rotate(5deg)} 75%{transform: rotate(-5deg)} 100%{transform: rotate(0deg)} }
+        /* --- ARENA --- */
+        .match-card { background: #161616; border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--glass); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { color: var(--text-dim); font-size: 0.65rem; padding-bottom: 10px; text-transform: uppercase; }
+        td { padding: 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div id="auth-area">
-        <div id="screen-login" class="auth-screen" style="height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 30px;">
-            <h1 style="text-align:center; font-size:3rem; letter-spacing:-3px; line-height:0.8">COPA<br><span style="color:var(--primary)">CAJACITY</span></h1>
-            <div style="margin-top:40px">
-                <input type="email" id="l-email" placeholder="E-mail">
-                <input type="password" id="l-pass" placeholder="Senha">
-                <button class="btn-glow" onclick="doLogin()">ENTRAR</button>
-                <p onclick="toggleAuth('reg')" style="text-align:center; margin-top:20px; font-size:0.8rem">Criar conta</p>
-            </div>
+        <div id="screen-login" class="card" style="margin: 100px 25px; text-align: center; border: 1px solid var(--primary-glow);">
+            <h1 class="logo-text" style="font-size: 2.5rem; margin-bottom: 30px;">COPA<br>CAJACYTE</h1>
+            <input type="email" id="l-email" placeholder="E-mail" style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; background:#181818; border:1px solid #333; color:#fff">
+            <input type="password" id="l-pass" placeholder="Senha" style="width:100%; padding:15px; margin-bottom:20px; border-radius:12px; background:#181818; border:1px solid #333; color:#fff">
+            <button class="btn-glow" onclick="doLogin()">ENTRAR NO CAMPO</button>
+            <p onclick="toggleAuth('reg')" style="margin-top:20px; color:var(--text-dim); font-size:0.9rem">Não tem conta? <span style="color:var(--primary)">Registrar</span></p>
         </div>
-        <div id="screen-reg" class="auth-screen hidden" style="height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 30px;">
-            <input type="text" id="r-nick" placeholder="Nick">
+        <div id="screen-reg" class="card hidden" style="margin: 80px 25px; text-align: center;">
+            <h2 style="margin-bottom:25px">NOVO ATLETA</h2>
+            <input type="text" id="r-nick" placeholder="Nome/Nick">
             <input type="email" id="r-email" placeholder="E-mail">
             <input type="password" id="r-pass" placeholder="Senha">
-            <button class="btn-glow" onclick="doRegister()">CADASTRAR</button>
-            <p onclick="toggleAuth('login')" style="text-align:center; margin-top:20px">Voltar</p>
+            <button class="btn-glow" onclick="doRegister()">CRIAR CONTA</button>
+            <p onclick="toggleAuth('login')" style="margin-top:20px">Já jogo aqui</p>
         </div>
     </div>
 
     <div id="app-area" class="hidden">
-        <header style="padding:15px; display:flex; justify-content:space-between; align-items:center; background:#0a0c10">
-            <div><strong style="font-size:1.1rem">METAS<span>BOARD</span></strong></div>
-            <div style="display:flex; align-items:center; gap:10px" onclick="openProfile()">
-                <div id="user-nick-display" style="font-size:0.7rem; font-weight:800">Nick</div>
-                <div id="user-avatar-display" style="width:35px; height:35px; border-radius:50%; background-size:cover; border:2px solid var(--primary)"></div>
+        <header>
+            <div class="logo-text">COPA CAJACYTE</div>
+            <div style="display:flex; align-items:center; gap:12px">
+                <div id="u-name" style="font-weight:700; font-size:0.8rem"></div>
+                <div id="u-avatar" style="width:38px; height:38px; border-radius:50%; background-size:cover; border:2px solid var(--primary); box-shadow: 0 0 10px var(--primary-glow);" onclick="openProfile()"></div>
             </div>
         </header>
 
         <main id="main-content">
             <div id="tab-lobby" class="page">
-                <div class="card" id="hall-fame" style="display:flex; justify-content:space-around; text-align:center"></div>
-                <h4 style="margin:15px 0">Jogadores Online</h4>
+                <div class="card" style="background: linear-gradient(to right, #111, #1a1a1a);">
+                    <h4 style="color:var(--primary); margin-bottom:15px"><i class="fas fa-crown"></i> HALL DA FAMA</h4>
+                    <div id="hall-fame" style="display:flex; justify-content:space-around"></div>
+                </div>
+                <h4 style="margin:20px 0 10px; letter-spacing: 1px;">ATLETAS ATIVOS</h4>
                 <div id="lobby-list"></div>
             </div>
 
             <div id="tab-copas" class="page hidden">
                 <div class="card">
-                    <h4>Novo Campeonato</h4>
-                    <input type="text" id="c-nome" placeholder="Nome">
+                    <h4 style="margin-bottom:15px">CRIAR NOVO TORNEIO</h4>
+                    <input type="text" id="c-nome" placeholder="Ex: Champions Cajacyte">
                     <select id="c-tipo">
-                        <option value="liga">Liga (Pontos Corridos)</option>
+                        <option value="liga">Pontos Corridos</option>
                         <option value="mata">Mata-Mata</option>
-                        <option value="amistoso">Amistoso</option>
                     </select>
-                    <button class="btn-glow" onclick="createCopa()">LANÇAR</button>
+                    <button class="btn-glow" style="margin-top:10px" onclick="createCopa()">GERAR COPA</button>
                 </div>
                 <div id="copas-list"></div>
             </div>
 
             <div id="tab-arena" class="page hidden">
                 <div id="print-area">
-                    <div id="arena-header" style="text-align:center; margin-bottom:15px"></div>
-                    <div style="display:flex; gap:5px; margin-bottom:15px">
+                    <div id="arena-header" style="text-align:center; margin-bottom:20px"></div>
+                    <div style="display:flex; gap:8px; margin-bottom:20px">
                         <button class="btn-glow" style="padding:10px; font-size:0.6rem" onclick="switchArena('tabela')">TABELA</button>
                         <button class="btn-glow" style="padding:10px; font-size:0.6rem" onclick="switchArena('jogos')">JOGOS</button>
-                        <button class="btn-glow" style="padding:10px; font-size:0.6rem" onclick="switchArena('convidar')">GERIR</button>
+                        <button class="btn-glow" style="padding:10px; font-size:0.6rem; background:#1a1a1a; color:#fff" onclick="switchArena('config')">GERENCIAR</button>
                     </div>
                     <div id="arena-content"></div>
                 </div>
-                <button class="btn-glow" style="margin-top:15px; background:#111; color:#fff" onclick="takePrint()">SALVAR IMAGEM</button>
             </div>
         </main>
 
-        <div id="modal-team" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:10000; padding:30px">
-            <h2 style="text-align:center; margin-bottom:20px">Escolha seu Time</h2>
-            <div class="teams-grid" id="teams-list"></div>
-            <button class="btn-glow" style="margin-top:20px" onclick="confirmTeamSelection()">ENTRAR NA COPA</button>
-        </div>
-
-        <div id="invite-popup">
-            <div style="display:flex; gap:15px; align-items:center">
-                <div id="inv-img" style="width:50px; height:50px; border-radius:50%; background-size:cover"></div>
-                <div style="flex:1">
-                    <strong id="inv-nick" style="color:var(--primary)">---</strong>
-                    <p style="font-size:0.7rem">Te convidou para uma Copa!</p>
-                </div>
-            </div>
-            <div style="display:flex; gap:10px; margin-top:15px">
-                <button class="btn-glow" style="padding:10px; font-size:0.7rem" onclick="acceptInvite()">ACEITAR</button>
-                <button class="btn-glow" style="padding:10px; font-size:0.7rem; background:#222; color:#fff" onclick="refuseInvite()">RECUSAR</button>
-            </div>
-        </div>
-
         <div id="chat-wrapper">
             <div id="chat-box">
-                <div id="chat-msgs" style="height:350px; overflow-y:auto; padding:15px; font-size:0.8rem"></div>
-                <div style="padding:10px; display:flex; gap:5px">
-                    <input type="text" id="chat-input" placeholder="Mensagem..." style="margin:0">
-                    <button onclick="sendMsg()" style="background:var(--primary); border:none; padding:0 15px; border-radius:10px">OK</button>
+                <div style="padding:15px; border-bottom:1px solid var(--glass); font-weight:800; color:var(--primary); display:flex; justify-content:space-between">
+                    CHAT GLOBAL <i class="fas fa-times" onclick="toggleChat()"></i>
+                </div>
+                <div id="chat-msgs"></div>
+                <div style="padding:10px; display:flex; gap:8px">
+                    <input type="text" id="chat-input" placeholder="Fala aí..." style="margin:0; flex:1; background:#000; border:none; padding:10px; border-radius:10px; color:#fff">
+                    <button onclick="sendMsg()" style="background:var(--primary); border:none; padding:10px 15px; border-radius:10px; color:#000"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
-            <div id="chat-bubble" onclick="toggleChat()" style="width:55px; height:55px; background:var(--grad); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#000">
-                <i class="fas fa-comment"></i>
+            <div id="chat-bubble" onclick="toggleChat()">
+                <i class="fas fa-comments"></i>
             </div>
-        </div>
-
-        <div id="sorteio-overlay" class="hidden">
-            <div class="sorteio-box"><i class="fas fa-random"></i></div>
-            <h2 style="margin-top:20px">SORTEANDO...</h2>
         </div>
 
         <nav class="nav-bar">
-            <div class="nav-link active" onclick="changeTab('lobby', this)"><i class="fas fa-users"></i>LOBBY</div>
+            <div class="nav-link active" onclick="changeTab('lobby', this)"><i class="fas fa-home"></i>LOBBY</div>
             <div class="nav-link" onclick="changeTab('copas', this)"><i class="fas fa-trophy"></i>COPAS</div>
             <div class="nav-link" onclick="changeTab('arena', this)"><i class="fas fa-gamepad"></i>ARENA</div>
         </nav>
+    </div>
+
+    <div id="modal-profile" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; padding:30px">
+        <h2 style="color:var(--primary); margin-bottom:20px">CONFIGURAÇÕES</h2>
+        <input type="text" id="new-nick" placeholder="Mudar Nick">
+        <button class="btn-glow" onclick="saveNewNick()">SALVAR NOME</button>
+        <button class="btn-glow" style="margin-top:20px; background:#222; color:#fff" onclick="closeProfile()">VOLTAR</button>
+        <button class="btn-glow" style="margin-top:40px; background:var(--danger); color:#fff" onclick="doLogout()">SAIR DA CONTA</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
