@@ -3,21 +3,16 @@ const db = firebase.firestore();
 let me = null;
 let currentCid = null;
 
-// --- CLOCK DINÂMICO ---
+// --- CLOCK ---
 setInterval(() => {
     const now = new Date();
-    const d = now.toLocaleDateString('pt-BR');
-    const t = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const el = document.getElementById('live-clock');
-    if(el) el.innerText = `${d} | ${t}`;
+    document.getElementById('live-clock').innerText = `${now.toLocaleDateString('pt-BR')} | ${now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`;
 }, 1000);
 
-// --- ENTER NO CHAT ---
-document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
-    if(e.key === 'Enter') sendMsg();
-});
+// --- ENTER CHAT ---
+document.getElementById('chat-input')?.addEventListener('keypress', e => { if(e.key === 'Enter') sendMsg(); });
 
-// --- AUTH ---
+// --- AUTH SYSTEM ---
 auth.onAuthStateChanged(user => {
     if(user) {
         db.collection('usuarios').doc(user.uid).onSnapshot(doc => {
@@ -41,37 +36,32 @@ function initApp() {
 }
 
 function doLogin() {
-    const e = document.getElementById('l-email').value;
-    const p = document.getElementById('l-pass').value;
-    auth.signInWithEmailAndPassword(e, p).catch(err => alert("Erro ao entrar: " + err.message));
+    auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(e => alert(e.message));
 }
 
 async function doRegister() {
     const n = document.getElementById('r-nick').value;
-    const e = document.getElementById('r-email').value;
-    const p = document.getElementById('r-pass').value;
-    try {
-        const res = await auth.createUserWithEmailAndPassword(e, p);
-        await db.collection('usuarios').doc(res.user.uid).set({
-            nome: n, online: true, foto: '', stats: { participacoes:0, titulos:0, v:0, e:0, d:0, gp:0, gs:0 }
-        });
-    } catch(err) { alert(err.message); }
+    const res = await auth.createUserWithEmailAndPassword(document.getElementById('r-email').value, document.getElementById('r-pass').value);
+    await db.collection('usuarios').doc(res.user.uid).set({
+        nome: n, online: true, foto: '', stats: { participacoes:0, titulos:0, v:0, e:0, d:0, gp:0, gs:0 }
+    });
 }
 
-// --- LOBBY & HISTÓRICO ---
+// --- LOBBY & PROFILE ---
 function loadLobby() {
     db.collection('usuarios').onSnapshot(snap => {
         let players = [];
         snap.forEach(doc => players.push({ id: doc.id, ...doc.data() }));
         players.sort((a,b) => b.online - a.online);
         document.getElementById('lobby-list').innerHTML = players.map(p => `
-            <div class="card" onclick="viewProfile('${p.id}')" style="display:flex; align-items:center; gap:15px; border-left: 4px solid ${p.online?'var(--divine-green)':'#333'}">
-                <div style="width:45px; height:45px; border-radius:50%; background:url(${p.foto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}); background-size:cover; border:2px solid #222;"></div>
+            <div class="card" onclick="viewProfile('${p.id}')" style="display:flex; align-items:center; gap:12px;">
+                <div class="status-dot" style="background:${p.online ? 'var(--divine-green)' : '#444'}; color:${p.online ? 'var(--divine-green)' : '#444'}"></div>
+                <div style="width:45px; height:45px; border-radius:50%; background:url(${p.foto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}); background-size:cover; border:2px solid var(--glass);"></div>
                 <div style="flex:1">
-                    <div style="font-weight:800; font-size:1rem;">${p.nome}</div>
-                    <div style="font-size:0.65rem; color:var(--neon-blue)">${p.stats.titulos} TÍTULOS | ${p.stats.v} VITÓRIAS</div>
+                    <div style="font-weight:800">${p.nome}</div>
+                    <div style="font-size:0.6rem; color:var(--neon-blue)">${p.stats.titulos} TROFÉUS | ${p.stats.v} VITÓRIAS</div>
                 </div>
-                <i class="fas fa-shield-halved" style="color:var(--primary); opacity:0.5"></i>
+                <i class="fas fa-medal" style="color:var(--primary)"></i>
             </div>
         `).join('');
     });
@@ -83,23 +73,23 @@ async function viewProfile(id) {
     document.getElementById('prof-nick').innerText = p.nome;
     document.getElementById('prof-avatar').style.backgroundImage = `url(${p.foto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'})`;
     document.getElementById('prof-stats').innerHTML = `
-        <div class="card" style="margin:0"><b>${p.stats.participacoes}</b><br><small>COPAS</small></div>
-        <div class="card" style="margin:0; border-color:var(--primary)"><b>${p.stats.titulos}</b><br><small>TÍTULOS</small></div>
         <div class="card" style="margin:0"><b>${p.stats.v}</b><br><small>VITÓRIAS</small></div>
+        <div class="card" style="margin:0"><b>${p.stats.titulos}</b><br><small>TÍTULOS</small></div>
         <div class="card" style="margin:0"><b>${p.stats.gp}</b><br><small>GOLS PRÓ</small></div>
+        <div class="card" style="margin:0"><b>${p.stats.gs}</b><br><small>SOFRIDOS</small></div>
     `;
     document.getElementById('modal-profile').classList.remove('hidden');
 }
 
-// --- CORE CAMPEONATOS ---
+// --- ARENA LOGIC ---
 async function createCopa() {
     const n = document.getElementById('c-nome').value;
     const t = document.getElementById('c-tipo').value;
-    if(!n) return alert("Dê um nome à Copa!");
+    if(!n) return;
     const ref = await db.collection('campeonatos').add({
         nome: n, tipo: t, host: me.uid, p: [me.uid], status: 'aberto',
-        tabela: { [me.uid]: { pts:0, v:0, e:0, d:0, gp:0, gs:0, sg:0, n:me.nome } },
-        jogos: [], fase: 'inicial', data: Date.now()
+        tabela: { [me.uid]: { pts:0, v:0, e:0, d:0, gp:0, gs:0, sg:0, n:me.nome, time: 'Agente Livre', escudo: '' } },
+        jogos: [], fase: 'Inscrições', data: Date.now()
     });
     openArena(ref.id);
 }
@@ -107,11 +97,9 @@ async function createCopa() {
 function loadCopas() {
     db.collection('campeonatos').orderBy('data', 'desc').onSnapshot(snap => {
         document.getElementById('copas-list').innerHTML = snap.docs.map(doc => `
-            <div class="card" onclick="openArena('${doc.id}')" style="background: linear-gradient(to right, #0a0c10, #111);">
+            <div class="card" onclick="openArena('${doc.id}')" style="background: linear-gradient(to right, #0d0f14, #1a1e26);">
                 <b style="color:var(--primary); font-size:1.1rem">${doc.data().nome}</b>
-                <div style="font-size:0.7rem; color:var(--neon-blue); margin-top:5px;">
-                    <i class="fas fa-trophy"></i> ${doc.data().tipo.toUpperCase()} | <i class="fas fa-users"></i> ${doc.data().p.length} ATLETAS
-                </div>
+                <div style="font-size:0.65rem; color:var(--neon-blue); margin-top:5px;">MODO: ${doc.data().tipo.toUpperCase()} | ${doc.data().p.length} PLAYERS</div>
             </div>
         `).join('');
     });
@@ -136,89 +124,80 @@ async function switchArena(mode) {
 
     if(mode === 'tabela') {
         if(c.tipo === 'mata') {
-            content.innerHTML = `<div class="phase-title">${c.fase.toUpperCase()}</div><div class="bracket-container" id="bracket-view"></div>`;
+            content.innerHTML = `<div style="color:var(--neon-blue); text-align:center; font-size:0.7rem; margin-bottom:15px;">CHAVEAMENTO ${c.fase.toUpperCase()}</div><div id="bracket-draw"></div>`;
             renderBracket(c);
         } else {
-            let h = `<table style="width:100%; text-align:left;"><tr><th>PLAYER</th><th>P</th><th>V</th><th>SG</th></tr>`;
+            let h = `<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                <tr style="color:var(--neon-blue); text-align:left;"><th>POS</th><th>TIME</th><th>P</th><th>V</th><th>SG</th></tr>`;
             const sorted = Object.entries(c.tabela).sort((a,b) => b[1].pts - a[1].pts || b[1].v - a[1].v || b[1].sg - a[1].sg);
-            sorted.forEach(([id, s]) => {
-                h += `<tr style="border-bottom:1px solid #111;"><td style="padding:12px 0">${s.n}</td><td style="color:var(--primary); font-weight:800">${s.pts}</td><td>${s.v}</td><td>${s.sg}</td></tr>`;
+            sorted.forEach(([id, s], i) => {
+                h += `<tr style="border-bottom:1px solid #111;">
+                    <td style="padding:12px 0">${i+1}</td>
+                    <td><div style="display:flex; align-items:center; gap:5px;">${s.time} <small>(${s.n})</small></div></td>
+                    <td style="color:var(--primary); font-weight:800">${s.pts}</td><td>${s.v}</td><td>${s.sg}</td>
+                </tr>`;
             });
             content.innerHTML = h + `</table>`;
         }
     } 
     else if(mode === 'jogos') {
         if(c.jogos.length === 0) {
-            content.innerHTML = c.host === me.uid ? `<button class="btn-glow" onclick="initMataMata()">GERAR CHAVEAMENTO INTELIGENTE</button>` : `<p style="text-align:center">O Host ainda não sorteou os jogos.</p>`;
+            content.innerHTML = c.host === me.uid ? `<button class="btn-glow" onclick="startTournament()">GERAR CONFRONTOS E SORTEAR</button>` : `<p>Aguardando início...</p>`;
         } else {
-            let html = c.jogos.map((j, i) => `
-                <div class="card" style="display:flex; justify-content:space-between; align-items:center; border: 1px solid #1a1a1a;">
-                    <div style="width:35%; font-weight:700">${j.n1}</div>
-                    <div class="score-box">
-                        ${c.host === me.uid ? `<button class="score-btn" onclick="upScore(${i}, 1, -1)"><i class="fas fa-minus"></i></button>` : ''}
-                        <div class="score-val">${j.g1??0} : ${j.g2??0}</div>
-                        ${c.host === me.uid ? `<button class="score-btn" onclick="upScore(${i}, 1, 1)"><i class="fas fa-plus"></i></button>` : ''}
+            content.innerHTML = c.jogos.map((j, i) => `
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="width:35%; font-weight:700; font-size:0.75rem">${c.tabela[j.p1].time}</div>
+                    <div class="score-ui">
+                        ${c.host === me.uid ? `<button onclick="upScore(${i}, 1, -1)">-</button>` : ''}
+                        <span>${j.g1??0} : ${j.g2??0}</span>
+                        ${c.host === me.uid ? `<button onclick="upScore(${i}, 1, 1)">+</button>` : ''}
                     </div>
-                    <div style="width:35%; text-align:right; font-weight:700">${j.n2}</div>
+                    <div style="width:35%; text-align:right; font-weight:700; font-size:0.75rem">${c.tabela[j.p2]?.time || 'SORTE'}</div>
                 </div>
             `).join('');
-            if(c.host === me.uid && c.jogos.every(j => j.g1 !== null && j.g1 !== j.g2)) {
-                html += `<button class="btn-glow" style="margin-top:20px; background:var(--neon-blue);" onclick="nextPhase()">AVANÇAR PARA PRÓXIMA FASE</button>`;
+            if(c.host === me.uid && c.tipo === 'mata') {
+                content.innerHTML += `<button class="btn-glow" style="margin-top:15px;" onclick="nextMataPhase()">AVANÇAR FASE</button>`;
             }
-            content.innerHTML = html;
         }
     }
     else if(mode === 'manage') {
         content.innerHTML = `
-            <button class="btn-glow" style="margin-bottom:12px;" onclick="inviteAll()">CONVIDAR JOGADORES DO LOBBY</button>
-            <button class="btn-glow" style="background:#500; color:#fff" onclick="deleteCopa()">EXCLUIR CAMPEONATO</button>
+            <div class="card">
+                <h4 style="margin-bottom:10px">CONFIGURAR TIMES</h4>
+                ${c.p.map(pid => `
+                    <div style="margin-bottom:10px">
+                        <small>${c.tabela[pid].n}:</small>
+                        <input type="text" placeholder="Nome do Time" onchange="updatePlayerTime('${pid}', this.value)" value="${c.tabela[pid].time}">
+                    </div>
+                `).join('')}
+            </div>
+            <button class="btn-glow" onclick="inviteLobby()">CONVOCAR TODOS</button>
+            <button class="btn-glow" style="background:#500; color:#fff; margin-top:15px;" onclick="deleteCopa()">EXCLUIR COPA</button>
         `;
     }
 }
 
-// --- LOGICA MATA-MATA INTELIGENTE ---
-async function initMataMata() {
+// --- MATA-MATA & LIGA CORE ---
+async function startTournament() {
     const snap = await db.collection('campeonatos').doc(currentCid).get();
     const c = snap.data();
-    let players = [...c.p];
-    players.sort(() => Math.random() - 0.5); // Sorteio inicial
-
-    const n = players.length;
-    let fase = 'Oitavas';
-    if(n <= 4) fase = 'Semi-Final';
-    else if(n <= 8) fase = 'Quartas';
-
+    let players = [...c.p].sort(() => Math.random() - 0.5);
     let jogos = [];
-    for(let i=0; i < players.length; i+=2) {
-        if(players[i+1]) {
-            jogos.push({ p1: players[i], p2: players[i+1], n1: c.tabela[players[i]].n, n2: c.tabela[players[i+1]].n, g1:0, g2:0 });
-        } else {
-            // Jogador que passou na sorte (Folga)
-            jogos.push({ p1: players[i], p2: 'BYE', n1: c.tabela[players[i]].n, n2: '--- (SORTE)', g1:1, g2:0 });
-        }
-    }
-    await db.collection('campeonatos').doc(currentCid).update({ jogos, fase });
-}
-
-async function nextPhase() {
-    const snap = await db.collection('campeonatos').doc(currentCid).get();
-    const c = snap.data();
-    let vencedores = c.jogos.map(j => j.g1 > j.g2 ? {id: j.p1, n: j.n1} : {id: j.p2, n: j.n2});
     
-    if(vencedores.length === 1) return alert("Campeonato Encerrado!");
-
-    let novaFase = 'Final';
-    if(vencedores.length > 2) novaFase = 'Semi-Final';
-
-    let novosJogos = [];
-    for(let i=0; i < vencedores.length; i+=2) {
-        if(vencedores[i+1]) {
-            novosJogos.push({ p1: vencedores[i].id, p2: vencedores[i+1].id, n1: vencedores[i].n, n2: vencedores[i+1].n, g1:0, g2:0 });
-        } else {
-            novosJogos.push({ p1: vencedores[i].id, p2: 'BYE', n1: vencedores[i].n, n2: 'SORTE', g1:1, g2:0 });
+    if(c.tipo === 'liga') {
+        for(let i=0; i<players.length; i++) {
+            for(let j=i+1; j<players.length; j++) {
+                jogos.push({ p1: players[i], p2: players[j], g1:0, g2:0 });
+            }
         }
+        await db.collection('campeonatos').doc(currentCid).update({ jogos, fase: 'Pontos Corridos' });
+    } else {
+        // Mata-Mata Inteligente
+        for(let i=0; i<players.length; i+=2) {
+            jogos.push({ p1: players[i], p2: players[i+1] || 'BYE', g1:0, g2: players[i+1] ? 0 : -1 });
+        }
+        await db.collection('campeonatos').doc(currentCid).update({ jogos, fase: players.length > 4 ? 'Quartas' : 'Semi' });
     }
-    await db.collection('campeonatos').doc(currentCid).update({ jogos: novosJogos, fase: novaFase });
 }
 
 async function upScore(idx, team, val) {
@@ -227,66 +206,64 @@ async function upScore(idx, team, val) {
     const j = c.jogos[idx];
     if(team === 1) j.g1 = Math.max(0, (j.g1||0) + val);
     else j.g2 = Math.max(0, (j.g2||0) + val);
-    
-    // Atualizar stats no banco (Gols e Vitorias) para o perfil
-    await db.collection('campeonatos').doc(currentCid).update({ jogos: c.jogos });
-    updateGlobalStats(j, val, team);
+
+    if(c.tipo === 'liga') {
+        // Recalcular Tabela Pontos Corridos
+        Object.keys(c.tabela).forEach(k => { c.tabela[k] = {...c.tabela[k], pts:0, v:0, sg:0, gp:0, gs:0}; });
+        c.jogos.forEach(m => {
+            const t1 = c.tabela[m.p1]; const t2 = c.tabela[m.p2];
+            t1.gp += m.g1; t1.gs += m.g2; t2.gp += m.g2; t2.gs += m.g1;
+            if(m.g1 > m.g2) { t1.pts += 3; t1.v++; }
+            else if(m.g2 > m.g1) { t2.pts += 3; t2.v++; }
+            else { t1.pts++; t2.pts++; }
+            t1.sg = t1.gp - t1.gs; t2.sg = t2.gp - t2.gs;
+        });
+    }
+    await db.collection('campeonatos').doc(currentCid).update({ jogos: c.jogos, tabela: c.tabela });
 }
 
 function renderBracket(c) {
-    const div = document.getElementById('bracket-view');
-    div.innerHTML = c.jogos.map(j => `
-        <div class="match-card">
-            <div class="match-team ${j.g1 > j.g2 ? 'winner':''}"><span>${j.n1}</span><span>${j.g1??0}</span></div>
-            <div class="match-team ${j.g2 > j.g1 ? 'winner':''}"><span>${j.n2}</span><span>${j.g2??0}</span></div>
+    const draw = document.getElementById('bracket-draw');
+    draw.innerHTML = c.jogos.map(j => `
+        <div class="bracket-match">
+            <div class="team-line ${j.g1 > j.g2 ? 'winner':''}"><span>${c.tabela[j.p1].time}</span><span>${j.g1}</span></div>
+            <div class="team-line ${j.g2 > j.g1 ? 'winner':''}"><span>${c.tabela[j.p2]?.time || 'FOLGA'}</span><span>${j.g2 === -1 ? '-' : j.g2}</span></div>
         </div>
     `).join('');
 }
 
-// --- UTIL ---
-async function inviteAll() {
+// --- UTILS ---
+async function updatePlayerTime(pid, time) {
+    const snap = await db.collection('campeonatos').doc(currentCid).get();
+    const c = snap.data();
+    c.tabela[pid].time = time;
+    await db.collection('campeonatos').doc(currentCid).update({ tabela: c.tabela });
+}
+
+async function inviteLobby() {
     const snap = await db.collection('usuarios').get();
-    let pIds = [];
-    let tab = {};
+    let p = []; let tab = {};
     snap.forEach(doc => {
-        pIds.push(doc.id);
-        tab[doc.id] = { pts:0, v:0, e:0, d:0, gp:0, gs:0, sg:0, n:doc.data().nome };
+        p.push(doc.id);
+        tab[doc.id] = { pts:0, v:0, sg:0, n:doc.data().nome, time: 'Time ' + doc.data().nome[0] };
     });
-    await db.collection('campeonatos').doc(currentCid).update({ p: pIds, tabela: tab });
-    alert("Todos os atletas do lobby foram convocados!");
+    await db.collection('campeonatos').doc(currentCid).update({ p, tabela: tab });
 }
 
-async function deleteCopa() {
-    if(confirm("Deseja deletar este torneio?")) {
-        await db.collection('campeonatos').doc(currentCid).delete();
-        changeTab('copas', document.querySelectorAll('.nav-link')[1]);
-    }
-}
-
-async function updateGlobalStats(jogo, val, team) {
-    if(val < 0) return; 
-    const uid = team === 1 ? jogo.p1 : jogo.p2;
-    if(uid === 'BYE') return;
-    const ref = db.collection('usuarios').doc(uid);
-    const u = (await ref.get()).data();
-    ref.update({ "stats.gp": u.stats.gp + 1 });
-}
+async function deleteCopa() { if(confirm("Apagar campeonato?")) await db.collection('campeonatos').doc(currentCid).delete(); }
 
 // --- CHAT & PERFIL ---
 function toggleChat() { document.getElementById('chat-window').classList.toggle('open'); }
 function sendMsg() {
-    const input = document.getElementById('chat-input');
-    if(!input.value) return;
-    db.collection('chat').add({ u: me.nome, m: input.value, t: Date.now() });
-    input.value = "";
+    const i = document.getElementById('chat-input');
+    if(!i.value) return;
+    db.collection('chat').add({ u: me.nome, m: i.value, t: Date.now() });
+    i.value = "";
 }
 function listenChat() {
-    db.collection('chat').orderBy('t', 'desc').limit(25).onSnapshot(snap => {
-        document.getElementById('chat-msgs').innerHTML = snap.docs.reverse().map(doc => `
-            <div style="margin-bottom:8px;"><b style="color:var(--neon-blue)">${doc.data().u}:</b> ${doc.data().m}</div>
-        `).join('');
-        const box = document.getElementById('chat-msgs');
-        box.scrollTop = box.scrollHeight;
+    db.collection('chat').orderBy('t', 'desc').limit(20).onSnapshot(snap => {
+        document.getElementById('chat-msgs').innerHTML = snap.docs.reverse().map(d => `<div class="msg-bubble"><b>${d.data().u}:</b> ${d.data().m}</div>`).join('');
+        document.getElementById('chat-msgs').scrollTop = 9999;
     });
 }
 function openSettings() {
@@ -296,10 +273,7 @@ function openSettings() {
 }
 function closeSettings() { document.getElementById('modal-settings').classList.add('hidden'); }
 async function saveSettings() {
-    await db.collection('usuarios').doc(me.uid).update({
-        nome: document.getElementById('set-nick').value,
-        foto: document.getElementById('set-foto').value
-    });
+    await db.collection('usuarios').doc(me.uid).update({ nome: document.getElementById('set-nick').value, foto: document.getElementById('set-foto').value });
     closeSettings();
 }
 function doLogout() { auth.signOut().then(() => location.reload()); }
