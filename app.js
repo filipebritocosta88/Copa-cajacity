@@ -3,16 +3,32 @@ const db = firebase.firestore();
 let me = null;
 let currentCid = null;
 
-// --- CLOCK ---
+const LIGAS = {
+    br: [
+        {n: 'Flamengo', e: 'https://upload.wikimedia.org/wikipedia/commons/2/2e/Flamengo_brazil.svg'},
+        {n: 'Palmeiras', e: 'https://upload.wikimedia.org/wikipedia/commons/1/10/Palmeiras_logo.svg'},
+        {n: 'São Paulo', e: 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Sao_Paulo_Futebol_Clube.svg'},
+        {n: 'Vasco', e: 'https://upload.wikimedia.org/wikipedia/pt/a/ac/CRVascoDaGama.png'},
+        {n: 'Corinthians', e: 'https://upload.wikimedia.org/wikipedia/pt/b/b4/Corinthians_simbolo.png'},
+        {n: 'Bahia', e: 'https://upload.wikimedia.org/wikipedia/pt/thumb/6/61/Esporte_Clube_Bahia_2014.png/150px-Esporte_Clube_Bahia_2014.png'}
+    ],
+    euro: [
+        {n: 'Real Madrid', e: 'https://upload.wikimedia.org/wikipedia/pt/9/98/Real_Madrid.png'},
+        {n: 'Barcelona', e: 'https://upload.wikimedia.org/wikipedia/pt/4/43/FCBarcelona.png'},
+        {n: 'Man. City', e: 'https://upload.wikimedia.org/wikipedia/pt/0/02/Manchester_City_FC_badge.png'},
+        {n: 'PSG', e: 'https://upload.wikimedia.org/wikipedia/pt/a/a7/Paris_Saint-Germain_F.C..png'},
+        {n: 'Bayern', e: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_München_logo_%282017%29.svg'},
+        {n: 'Liverpool', e: 'https://upload.wikimedia.org/wikipedia/pt/0/0c/Liverpool_FC.png'}
+    ]
+};
+
+// RELÓGIO
 setInterval(() => {
-    const now = new Date();
-    document.getElementById('live-clock').innerText = `${now.toLocaleDateString('pt-BR')} | ${now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`;
+    const el = document.getElementById('live-clock');
+    if(el) el.innerText = new Date().toLocaleString('pt-BR');
 }, 1000);
 
-// --- ENTER CHAT ---
-document.getElementById('chat-input')?.addEventListener('keypress', e => { if(e.key === 'Enter') sendMsg(); });
-
-// --- AUTH SYSTEM ---
+// AUTH FLOW
 auth.onAuthStateChanged(user => {
     if(user) {
         db.collection('usuarios').doc(user.uid).onSnapshot(doc => {
@@ -28,68 +44,80 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-function initApp() {
-    loadLobby();
-    loadCopas();
-    listenChat();
-    db.collection('usuarios').doc(me.uid).update({ online: true });
+function toggleAuth(t) {
+    document.getElementById('screen-login').classList.toggle('hidden', t === 'reg');
+    document.getElementById('screen-reg').classList.toggle('hidden', t === 'login');
+}
+
+async function doRegister() {
+    const nick = document.getElementById('r-nick').value;
+    const email = document.getElementById('r-email').value;
+    const pass = document.getElementById('r-pass').value;
+    if(!nick || !email || !pass) return alert("Preencha todos os campos!");
+    try {
+        const res = await auth.createUserWithEmailAndPassword(email, pass);
+        await db.collection('usuarios').doc(res.user.uid).set({
+            nome: nick, foto: '', stats: { titulos:0, v:0, gp:0, gs:0, participacoes:0 }
+        });
+    } catch(e) { alert(e.message); }
 }
 
 function doLogin() {
     auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(e => alert(e.message));
 }
 
-async function doRegister() {
-    const n = document.getElementById('r-nick').value;
-    const res = await auth.createUserWithEmailAndPassword(document.getElementById('r-email').value, document.getElementById('r-pass').value);
-    await db.collection('usuarios').doc(res.user.uid).set({
-        nome: n, online: true, foto: '', stats: { participacoes:0, titulos:0, v:0, e:0, d:0, gp:0, gs:0 }
-    });
+// APP CORE
+function initApp() {
+    loadLobby();
+    loadCopas();
+    listenChat();
 }
 
-// --- LOBBY & PROFILE ---
 function loadLobby() {
     db.collection('usuarios').onSnapshot(snap => {
-        let players = [];
-        snap.forEach(doc => players.push({ id: doc.id, ...doc.data() }));
-        players.sort((a,b) => b.online - a.online);
-        document.getElementById('lobby-list').innerHTML = players.map(p => `
-            <div class="card" onclick="viewProfile('${p.id}')" style="display:flex; align-items:center; gap:12px;">
-                <div class="status-dot" style="background:${p.online ? 'var(--divine-green)' : '#444'}; color:${p.online ? 'var(--divine-green)' : '#444'}"></div>
-                <div style="width:45px; height:45px; border-radius:50%; background:url(${p.foto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}); background-size:cover; border:2px solid var(--glass);"></div>
-                <div style="flex:1">
-                    <div style="font-weight:800">${p.nome}</div>
-                    <div style="font-size:0.6rem; color:var(--neon-blue)">${p.stats.titulos} TROFÉUS | ${p.stats.v} VITÓRIAS</div>
-                </div>
-                <i class="fas fa-medal" style="color:var(--primary)"></i>
-            </div>
-        `).join('');
+        let html = '';
+        snap.forEach(doc => {
+            const p = doc.data();
+            html += `<div class="card" style="display:flex; align-items:center; gap:10px;">
+                <div style="width:40px; height:40px; border-radius:50%; background:url(${p.foto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}); background-size:cover;"></div>
+                <div style="flex:1"><b>${p.nome}</b><br><small style="color:var(--neon-blue)">${p.stats.titulos} Títulos | ${p.stats.v} Vitórias</small></div>
+            </div>`;
+        });
+        document.getElementById('lobby-list').innerHTML = html;
+        loadPodium();
     });
 }
 
-async function viewProfile(id) {
-    const doc = await db.collection('usuarios').doc(id).get();
-    const p = doc.data();
-    document.getElementById('prof-nick').innerText = p.nome;
-    document.getElementById('prof-avatar').style.backgroundImage = `url(${p.foto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'})`;
-    document.getElementById('prof-stats').innerHTML = `
-        <div class="card" style="margin:0"><b>${p.stats.v}</b><br><small>VITÓRIAS</small></div>
-        <div class="card" style="margin:0"><b>${p.stats.titulos}</b><br><small>TÍTULOS</small></div>
-        <div class="card" style="margin:0"><b>${p.stats.gp}</b><br><small>GOLS PRÓ</small></div>
-        <div class="card" style="margin:0"><b>${p.stats.gs}</b><br><small>SOFRIDOS</small></div>
-    `;
-    document.getElementById('modal-profile').classList.remove('hidden');
+function loadPodium() {
+    db.collection('usuarios').orderBy('stats.titulos', 'desc').limit(3).get().then(snap => {
+        let p = []; snap.forEach(doc => p.push(doc.data()));
+        if(p.length === 0) return;
+        document.getElementById('podium-area').innerHTML = `
+            <div class="podium-box">
+                <div class="podium-item podium-2"><small>${p[1]?.nome || '-'}</small></div>
+                <div class="podium-item podium-1"><i class="fas fa-crown" style="color:gold"></i><br><small>${p[0]?.nome || '-'}</small></div>
+                <div class="podium-item podium-3"><small>${p[2]?.nome || '-'}</small></div>
+            </div>`;
+    });
 }
 
-// --- ARENA LOGIC ---
+// GESTÃO COPA
+function nextStep(s) {
+    document.getElementById('step-1').classList.add('hidden');
+    document.getElementById('step-2').classList.remove('hidden');
+}
+
 async function createCopa() {
-    const n = document.getElementById('c-nome').value;
-    const t = document.getElementById('c-tipo').value;
-    if(!n) return;
+    const qtd = parseInt(document.getElementById('c-qtd').value);
+    const nome = document.getElementById('c-nome').value;
+    const tipo = document.getElementById('c-tipo').value;
+    const liga = document.getElementById('c-liga').value;
+    
     const ref = await db.collection('campeonatos').add({
-        nome: n, tipo: t, host: me.uid, p: [me.uid], status: 'aberto',
-        tabela: { [me.uid]: { pts:0, v:0, e:0, d:0, gp:0, gs:0, sg:0, n:me.nome, time: 'Agente Livre', escudo: '' } },
-        jogos: [], fase: 'Inscrições', data: Date.now()
+        nome, tipo, liga, host: me.uid, status: 'aberto',
+        vagas: qtd, p: [me.uid], bots: [],
+        tabela: { [me.uid]: { n: me.nome, time: 'A Definir', escudo: '', pts:0, v:0, sg:0 } },
+        jogos: [], fase: 'Aguardando Início', data: Date.now()
     });
     openArena(ref.id);
 }
@@ -97,9 +125,9 @@ async function createCopa() {
 function loadCopas() {
     db.collection('campeonatos').orderBy('data', 'desc').onSnapshot(snap => {
         document.getElementById('copas-list').innerHTML = snap.docs.map(doc => `
-            <div class="card" onclick="openArena('${doc.id}')" style="background: linear-gradient(to right, #0d0f14, #1a1e26);">
-                <b style="color:var(--primary); font-size:1.1rem">${doc.data().nome}</b>
-                <div style="font-size:0.65rem; color:var(--neon-blue); margin-top:5px;">MODO: ${doc.data().tipo.toUpperCase()} | ${doc.data().p.length} PLAYERS</div>
+            <div class="card" onclick="openArena('${doc.id}')">
+                <b style="color:var(--primary)">${doc.data().nome}</b>
+                <div style="font-size:0.7rem; color:var(--neon-blue)">${doc.data().tipo.toUpperCase()} | ${doc.data().vagas} VAGAS | FASE: ${doc.data().fase}</div>
             </div>
         `).join('');
     });
@@ -109,177 +137,195 @@ function openArena(id) {
     currentCid = id;
     changeTab('arena', document.querySelectorAll('.nav-link')[2]);
     db.collection('campeonatos').doc(id).onSnapshot(doc => {
-        if(!doc.exists) return;
         const c = doc.data();
-        document.getElementById('arena-header').innerHTML = `<h2 style="text-align:center; color:var(--primary); font-weight:900;">${c.nome}</h2>`;
+        if(!c) return;
+        document.getElementById('arena-header').innerHTML = `<h3 style="text-align:center; color:var(--primary)">${c.nome}</h3><p style="text-align:center; font-size:0.7rem;">${c.fase}</p>`;
         document.getElementById('btn-manage').classList.toggle('hidden', c.host !== me.uid);
-        switchArena('tabela');
+        switchArena('jogos');
     });
 }
 
 async function switchArena(mode) {
+    const snap = await db.collection('campeonatos').doc(currentCid).get();
+    const c = snap.data();
     const content = document.getElementById('arena-content');
-    const snap = await db.collection('campeonatos').doc(currentCid).get();
-    const c = snap.data();
 
-    if(mode === 'tabela') {
-        if(c.tipo === 'mata') {
-            content.innerHTML = `<div style="color:var(--neon-blue); text-align:center; font-size:0.7rem; margin-bottom:15px;">CHAVEAMENTO ${c.fase.toUpperCase()}</div><div id="bracket-draw"></div>`;
-            renderBracket(c);
-        } else {
-            let h = `<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
-                <tr style="color:var(--neon-blue); text-align:left;"><th>POS</th><th>TIME</th><th>P</th><th>V</th><th>SG</th></tr>`;
-            const sorted = Object.entries(c.tabela).sort((a,b) => b[1].pts - a[1].pts || b[1].v - a[1].v || b[1].sg - a[1].sg);
-            sorted.forEach(([id, s], i) => {
-                h += `<tr style="border-bottom:1px solid #111;">
-                    <td style="padding:12px 0">${i+1}</td>
-                    <td><div style="display:flex; align-items:center; gap:5px;">${s.time} <small>(${s.n})</small></div></td>
-                    <td style="color:var(--primary); font-weight:800">${s.pts}</td><td>${s.v}</td><td>${s.sg}</td>
-                </tr>`;
-            });
-            content.innerHTML = h + `</table>`;
+    if(mode === 'manage') {
+        let h = `<h4>GESTÃO DA COPA</h4><br>`;
+        if(c.p.length + c.bots.length < c.vagas) {
+            h += `<button class="btn-glow" style="margin-bottom:15px;" onclick="addBot()">+ ADICIONAR BOT</button>`;
         }
-    } 
-    else if(mode === 'jogos') {
-        if(c.jogos.length === 0) {
-            content.innerHTML = c.host === me.uid ? `<button class="btn-glow" onclick="startTournament()">GERAR CONFRONTOS E SORTEAR</button>` : `<p>Aguardando início...</p>`;
-        } else {
-            content.innerHTML = c.jogos.map((j, i) => `
-                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="width:35%; font-weight:700; font-size:0.75rem">${c.tabela[j.p1].time}</div>
-                    <div class="score-ui">
-                        ${c.host === me.uid ? `<button onclick="upScore(${i}, 1, -1)">-</button>` : ''}
-                        <span>${j.g1??0} : ${j.g2??0}</span>
-                        ${c.host === me.uid ? `<button onclick="upScore(${i}, 1, 1)">+</button>` : ''}
-                    </div>
-                    <div style="width:35%; text-align:right; font-weight:700; font-size:0.75rem">${c.tabela[j.p2]?.time || 'SORTE'}</div>
+        [...c.p, ...c.bots.map(b=>b.id)].forEach(pid => {
+            const player = c.tabela[pid];
+            h += `<div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <b>${player.n}</b>
+                    ${pid.startsWith('bot_') ? `<button onclick="removeBot('${pid}')" style="background:#500; border:none; color:#fff; padding:4px 8px; border-radius:5px; font-size:0.6rem;">Remover</button>` : ''}
                 </div>
-            `).join('');
-            if(c.host === me.uid && c.tipo === 'mata') {
-                content.innerHTML += `<button class="btn-glow" style="margin-top:15px;" onclick="nextMataPhase()">AVANÇAR FASE</button>`;
-            }
+                <select onchange="setClub('${pid}', this.value)">
+                    <option>Escolher Clube da Liga</option>
+                    ${LIGAS[c.liga].map(club => `<option value="${club.n}" ${player.time === club.n ? 'selected':''}>${club.n}</option>`).join('')}
+                </select>
+            </div>`;
+        });
+        if(c.jogos.length === 0) {
+            h += `<button class="btn-glow" style="background:var(--divine-green); color:#000" onclick="sortearChaves()">SORTEAR E INICIAR</button>`;
+        } else if (c.fase !== 'Finalizada') {
+            h += `<button class="btn-glow" style="margin-top:20px; background:var(--neon-blue); color:#000" onclick="avancarFase()">AVANÇAR PARA PRÓXIMA FASE</button>`;
         }
-    }
-    else if(mode === 'manage') {
-        content.innerHTML = `
-            <div class="card">
-                <h4 style="margin-bottom:10px">CONFIGURAR TIMES</h4>
-                ${c.p.map(pid => `
-                    <div style="margin-bottom:10px">
-                        <small>${c.tabela[pid].n}:</small>
-                        <input type="text" placeholder="Nome do Time" onchange="updatePlayerTime('${pid}', this.value)" value="${c.tabela[pid].time}">
-                    </div>
-                `).join('')}
+        h += `<button class="btn-secondary" style="margin-top:20px; color:#ff4444; border-color:#ff4444;" onclick="deleteCopa()">EXCLUIR CAMPEONATO</button>`;
+        content.innerHTML = h;
+    } else if(mode === 'jogos') {
+        if(c.jogos.length === 0) return content.innerHTML = "<p style='text-align:center;'>O Host precisa sortear os times!</p>";
+        content.innerHTML = c.jogos.map((j, i) => `
+            <div class="match-card">
+                <div class="match-team">
+                    <img src="${c.tabela[j.p1].escudo || ''}" onerror="this.style.display='none'">
+                    <span>${c.tabela[j.p1].time} <small>(${c.tabela[j.p1].n})</small></span>
+                    <input type="number" class="score-input" value="${j.g1}" onchange="updateGols(${i}, 1, this.value)" ${c.host !== me.uid ? 'disabled' : ''}>
+                </div>
+                <div style="text-align:center; font-size:0.6rem; color:var(--primary); margin: 5px 0;">X</div>
+                <div class="match-team">
+                    <img src="${c.tabela[j.p2]?.escudo || ''}" onerror="this.style.display='none'">
+                    <span>${j.p2 === 'BYE' ? 'FOLGA' : c.tabela[j.p2].time + ' <small>('+c.tabela[j.p2].n+')</small>'}</span>
+                    <input type="number" class="score-input" value="${j.g2}" onchange="updateGols(${i}, 2, this.value)" ${j.p2 === 'BYE' || c.host !== me.uid ? 'disabled' : ''}>
+                </div>
             </div>
-            <button class="btn-glow" onclick="inviteLobby()">CONVOCAR TODOS</button>
-            <button class="btn-glow" style="background:#500; color:#fff; margin-top:15px;" onclick="deleteCopa()">EXCLUIR COPA</button>
-        `;
-    }
-}
-
-// --- MATA-MATA & LIGA CORE ---
-async function startTournament() {
-    const snap = await db.collection('campeonatos').doc(currentCid).get();
-    const c = snap.data();
-    let players = [...c.p].sort(() => Math.random() - 0.5);
-    let jogos = [];
-    
-    if(c.tipo === 'liga') {
-        for(let i=0; i<players.length; i++) {
-            for(let j=i+1; j<players.length; j++) {
-                jogos.push({ p1: players[i], p2: players[j], g1:0, g2:0 });
-            }
-        }
-        await db.collection('campeonatos').doc(currentCid).update({ jogos, fase: 'Pontos Corridos' });
+        `).join('');
     } else {
-        // Mata-Mata Inteligente
-        for(let i=0; i<players.length; i+=2) {
-            jogos.push({ p1: players[i], p2: players[i+1] || 'BYE', g1:0, g2: players[i+1] ? 0 : -1 });
-        }
-        await db.collection('campeonatos').doc(currentCid).update({ jogos, fase: players.length > 4 ? 'Quartas' : 'Semi' });
+        content.innerHTML = `<p style="text-align:center">Quadro em desenvolvimento...</p>`;
     }
 }
 
-async function upScore(idx, team, val) {
+// LOGICA DE SORTEIO
+async function sortearChaves() {
     const snap = await db.collection('campeonatos').doc(currentCid).get();
     const c = snap.data();
-    const j = c.jogos[idx];
-    if(team === 1) j.g1 = Math.max(0, (j.g1||0) + val);
-    else j.g2 = Math.max(0, (j.g2||0) + val);
-
-    if(c.tipo === 'liga') {
-        // Recalcular Tabela Pontos Corridos
-        Object.keys(c.tabela).forEach(k => { c.tabela[k] = {...c.tabela[k], pts:0, v:0, sg:0, gp:0, gs:0}; });
-        c.jogos.forEach(m => {
-            const t1 = c.tabela[m.p1]; const t2 = c.tabela[m.p2];
-            t1.gp += m.g1; t1.gs += m.g2; t2.gp += m.g2; t2.gs += m.g1;
-            if(m.g1 > m.g2) { t1.pts += 3; t1.v++; }
-            else if(m.g2 > m.g1) { t2.pts += 3; t2.v++; }
-            else { t1.pts++; t2.pts++; }
-            t1.sg = t1.gp - t1.gs; t2.sg = t2.gp - t2.gs;
+    let pids = [...c.p, ...c.bots.map(b => b.id)].sort(() => Math.random() - 0.5);
+    
+    let jogos = [];
+    for(let i=0; i < pids.length; i+=2) {
+        jogos.push({
+            p1: pids[i],
+            p2: pids[i+1] || 'BYE',
+            g1: 0,
+            g2: pids[i+1] ? 0 : -1
         });
     }
-    await db.collection('campeonatos').doc(currentCid).update({ jogos: c.jogos, tabela: c.tabela });
+    const nomeFase = pids.length > 8 ? 'Oitavas' : (pids.length > 4 ? 'Quartas' : (pids.length > 2 ? 'Semi-Final' : 'Final'));
+    await db.collection('campeonatos').doc(currentCid).update({ jogos, fase: nomeFase });
 }
 
-function renderBracket(c) {
-    const draw = document.getElementById('bracket-draw');
-    draw.innerHTML = c.jogos.map(j => `
-        <div class="bracket-match">
-            <div class="team-line ${j.g1 > j.g2 ? 'winner':''}"><span>${c.tabela[j.p1].time}</span><span>${j.g1}</span></div>
-            <div class="team-line ${j.g2 > j.g1 ? 'winner':''}"><span>${c.tabela[j.p2]?.time || 'FOLGA'}</span><span>${j.g2 === -1 ? '-' : j.g2}</span></div>
-        </div>
-    `).join('');
-}
-
-// --- UTILS ---
-async function updatePlayerTime(pid, time) {
+// LOGICA AVANÇAR FASE (MATA-MATA)
+async function avancarFase() {
     const snap = await db.collection('campeonatos').doc(currentCid).get();
     const c = snap.data();
-    c.tabela[pid].time = time;
+    
+    // 1. Verificar se todos os jogos têm placar
+    const incompletos = c.jogos.filter(j => j.p2 !== 'BYE' && (j.g1 === j.g2)); 
+    if(incompletos.length > 0 && !confirm("Existem empates ou jogos sem gols. Deseja avançar assim mesmo? (Empates precisam de critério)")) return;
+
+    // 2. Coletar vencedores
+    let vencedores = [];
+    c.jogos.forEach(j => {
+        if(j.p2 === 'BYE') { vencedores.push(j.p1); }
+        else if(j.g1 > j.g2) { vencedores.push(j.p1); }
+        else { vencedores.push(j.p2); }
+    });
+
+    if(vencedores.length === 1) {
+        const champId = vencedores[0];
+        alert("O CAMPEÃO É: " + c.tabela[champId].n);
+        // Atualizar troféus se for player real
+        if(!champId.startsWith('bot_')) {
+            const uDoc = await db.collection('usuarios').doc(champId).get();
+            const curTitulos = uDoc.data().stats.titulos || 0;
+            await db.collection('usuarios').doc(champId).update({ "stats.titulos": curTitulos + 1 });
+        }
+        await db.collection('campeonatos').doc(currentCid).update({ fase: 'Finalizada', jogos: [] });
+        return;
+    }
+
+    // 3. Gerar novos jogos
+    let novosJogos = [];
+    for(let i=0; i < vencedores.length; i+=2) {
+        novosJogos.push({
+            p1: vencedores[i],
+            p2: vencedores[i+1] || 'BYE',
+            g1: 0,
+            g2: vencedores[i+1] ? 0 : -1
+        });
+    }
+
+    const proxFase = vencedores.length > 4 ? 'Quartas' : (vencedores.length > 2 ? 'Semi-Final' : 'Grande Final');
+    await db.collection('campeonatos').doc(currentCid).update({ jogos: novosJogos, fase: proxFase });
+    alert("Nova fase gerada!");
+    switchArena('jogos');
+}
+
+// HELPERS BOTS/CLUBS
+async function addBot() {
+    const snap = await db.collection('campeonatos').doc(currentCid).get();
+    const c = snap.data();
+    const id = 'bot_' + Date.now();
+    const nome = 'Bot ' + (c.bots.length + 1);
+    const newBots = [...c.bots, {id, n: nome}];
+    const newTab = {...c.tabela, [id]: {n: nome, time: 'A Definir', escudo: '', pts:0, v:0, sg:0}};
+    await db.collection('campeonatos').doc(currentCid).update({ bots: newBots, tabela: newTab });
+}
+
+async function removeBot(botId) {
+    const snap = await db.collection('campeonatos').doc(currentCid).get();
+    const c = snap.data();
+    const newBots = c.bots.filter(b => b.id !== botId);
+    delete c.tabela[botId];
+    await db.collection('campeonatos').doc(currentCid).update({ bots: newBots, tabela: c.tabela });
+}
+
+async function setClub(pid, clubName) {
+    const snap = await db.collection('campeonatos').doc(currentCid).get();
+    const c = snap.data();
+    const club = LIGAS[c.liga].find(l => l.n === clubName);
+    c.tabela[pid].time = club.n;
+    c.tabela[pid].escudo = club.e;
     await db.collection('campeonatos').doc(currentCid).update({ tabela: c.tabela });
 }
 
-async function inviteLobby() {
-    const snap = await db.collection('usuarios').get();
-    let p = []; let tab = {};
-    snap.forEach(doc => {
-        p.push(doc.id);
-        tab[doc.id] = { pts:0, v:0, sg:0, n:doc.data().nome, time: 'Time ' + doc.data().nome[0] };
-    });
-    await db.collection('campeonatos').doc(currentCid).update({ p, tabela: tab });
+async function updateGols(idx, player, val) {
+    const snap = await db.collection('campeonatos').doc(currentCid).get();
+    const c = snap.data();
+    const v = parseInt(val) || 0;
+    if(player === 1) c.jogos[idx].g1 = v;
+    else c.jogos[idx].g2 = v;
+    await db.collection('campeonatos').doc(currentCid).update({ jogos: c.jogos });
 }
 
-async function deleteCopa() { if(confirm("Apagar campeonato?")) await db.collection('campeonatos').doc(currentCid).delete(); }
-
-// --- CHAT & PERFIL ---
-function toggleChat() { document.getElementById('chat-window').classList.toggle('open'); }
-function sendMsg() {
-    const i = document.getElementById('chat-input');
-    if(!i.value) return;
-    db.collection('chat').add({ u: me.nome, m: i.value, t: Date.now() });
-    i.value = "";
+// CHAT & UI
+function changeTab(t, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab-' + t).classList.remove('hidden');
+    if(el) {
+        document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+        el.classList.add('active');
+    }
 }
 function listenChat() {
-    db.collection('chat').orderBy('t', 'desc').limit(20).onSnapshot(snap => {
-        document.getElementById('chat-msgs').innerHTML = snap.docs.reverse().map(d => `<div class="msg-bubble"><b>${d.data().u}:</b> ${d.data().m}</div>`).join('');
+    db.collection('chat').orderBy('t', 'desc').limit(15).onSnapshot(snap => {
+        document.getElementById('chat-msgs').innerHTML = snap.docs.reverse().map(d => `<div class="chat-msg"><b>${d.data().u}:</b> ${d.data().m}</div>`).join('');
         document.getElementById('chat-msgs').scrollTop = 9999;
     });
 }
-function openSettings() {
-    document.getElementById('set-nick').value = me.nome;
-    document.getElementById('set-foto').value = me.foto;
-    document.getElementById('modal-settings').classList.remove('hidden');
+function sendMsg() {
+    const i = document.getElementById('chat-input');
+    if(!i.value || !me) return;
+    db.collection('chat').add({ u: me.nome, m: i.value, t: Date.now() });
+    i.value = "";
 }
+function openSettings() { document.getElementById('set-nick').value = me.nome; document.getElementById('set-foto').value = me.foto; document.getElementById('modal-settings').classList.remove('hidden'); }
 function closeSettings() { document.getElementById('modal-settings').classList.add('hidden'); }
 async function saveSettings() {
     await db.collection('usuarios').doc(me.uid).update({ nome: document.getElementById('set-nick').value, foto: document.getElementById('set-foto').value });
     closeSettings();
 }
 function doLogout() { auth.signOut().then(() => location.reload()); }
-function changeTab(t, el) {
-    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-    document.getElementById('tab-' + t).classList.remove('hidden');
-    el.classList.add('active');
-}
+async function deleteCopa() { if(confirm("Deseja deletar este campeonato permanentemente?")) { await db.collection('campeonatos').doc(currentCid).delete(); changeTab('copas'); } }
