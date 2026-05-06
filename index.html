@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOGISTICA - Metasboard</title>
+    <title>SISTEMA LOGISTICA | Metasboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary: #1a2a6c;
-            --secondary: #2c3e50;
-            --accent: #00d2ff;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --bg: #f8f9fa;
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f1f5f9;
+            --white: #ffffff;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg);
             margin: 0;
             display: flex;
-            color: var(--secondary);
+            color: var(--primary);
         }
 
         /* Sidebar */
@@ -32,264 +33,288 @@
             color: white;
             position: fixed;
             padding: 20px;
-            box-sizing: border-box;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
         }
 
-        .sidebar h2 {
+        .sidebar .logo {
             font-size: 1.5rem;
+            font-weight: 800;
             text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 20px;
+            padding: 20px 0;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 20px;
             letter-spacing: 2px;
+            color: var(--accent);
         }
 
-        /* Painel Principal */
-        .container {
+        .nav-item {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Main Content */
+        .main {
             margin-left: 260px;
             padding: 30px;
             width: 100%;
-            max-width: 1400px;
         }
 
-        /* Dashboard Cards */
-        .dash-cards {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
         }
 
-        .card {
-            background: white;
+        /* Dash Cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--white);
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--accent);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: relative;
+            overflow: hidden;
         }
 
-        .card h3 { font-size: 0.85rem; text-transform: uppercase; margin-top: 0; color: #7f8c8d; }
-        .card .value { font-size: 1.8rem; font-weight: bold; margin: 10px 0; }
+        .stat-card::after {
+            content: "";
+            position: absolute;
+            left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--accent);
+        }
 
-        /* Formulário */
-        .form-section {
-            background: white;
+        .stat-card.warning::after { background: var(--warning); }
+        .stat-card.success::after { background: var(--success); }
+        .stat-card.danger::after { background: var(--danger); }
+
+        .stat-card h3 { font-size: 0.75rem; color: #64748b; text-transform: uppercase; margin: 0; }
+        .stat-card .val { font-size: 1.5rem; font-weight: 700; margin-top: 10px; display: block; }
+
+        /* Form Sections */
+        .section-card {
+            background: var(--white);
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             margin-bottom: 30px;
         }
 
-        .grid-inputs {
+        .form-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
         }
 
-        .input-group { position: relative; }
-        
-        label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: 600; }
-        
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
         input, select, textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #cbd5e1;
             border-radius: 6px;
-            box-sizing: border-box;
-            outline: none;
+            font-size: 0.9rem;
         }
 
-        input:focus { border-color: var(--accent); }
-
-        .suggestions {
-            position: absolute;
-            background: white;
-            border: 1px solid #ddd;
-            width: 100%;
-            z-index: 100;
-            max-height: 150px;
-            overflow-y: auto;
-            border-radius: 0 0 6px 6px;
-            display: none;
-        }
-
-        .suggestions div {
-            padding: 10px;
-            cursor: pointer;
-        }
-
-        .suggestions div:hover { background: #f0f0f0; }
-
-        .btn-submit {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            transition: 0.3s;
-        }
-
-        .btn-submit:hover { background: var(--secondary); }
-
-        /* Tabela */
-        .table-container {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; padding: 15px; text-align: left; font-size: 0.9rem; }
-        td { padding: 15px; border-top: 1px solid #eee; font-size: 0.9rem; }
-
-        .status-badge {
+        .prioridade-btn {
+            display: inline-block;
             padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
             font-weight: bold;
+            color: white;
         }
 
-        .status-pendente { background: #ffeaa7; color: #d6a316; }
-        .status-finalizado { background: #55efc4; color: #00b894; }
-
-        .modal-logistica {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
             background: white;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            z-index: 1000;
             border-radius: 12px;
-            width: 400px;
         }
 
-        .overlay {
+        th { background: #f8fafc; padding: 15px; text-align: left; font-size: 0.8rem; color: #64748b; }
+        td { padding: 15px; border-top: 1px solid #f1f5f9; font-size: 0.85rem; }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; z-index: 1000; padding: 30px;
+            border-radius: 16px; width: 500px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
         }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <h2>LOGISTICA</h2>
-        <p style="text-align: center; font-size: 0.8rem; opacity: 0.7;">Metasboard v1.0</p>
-        <hr style="opacity: 0.1; margin: 20px 0;">
-        <div style="padding: 10px;"><i class="fas fa-home"></i> Painel Geral</div>
-        <div style="padding: 10px;"><i class="fas fa-file-export"></i> Exportar Mensal</div>
+        <div class="logo">LOGISTICA</div>
+        <div class="nav-item active"><i class="fas fa-chart-pie"></i> Dashboard</div>
+        <div class="nav-item"><i class="fas fa-plus"></i> Nova Solicitação</div>
+        <div class="nav-item"><i class="fas fa-list"></i> Minhas Solicitações</div>
+        <div class="nav-item"><i class="fas fa-truck-loading"></i> Atendimento</div>
+        <div class="nav-item"><i class="fas fa-file-invoice-dollar"></i> Relatórios</div>
+        <div class="nav-item"><i class="fas fa-cog"></i> Cadastros Base</div>
     </div>
 
-    <div class="container">
-        <!-- Dashboard -->
-        <div class="dash-cards">
-            <div class="card">
-                <h3>Pedidos</h3>
-                <div class="value" id="card-pedidos">0</div>
-            </div>
-            <div class="card" style="border-left-color: var(--warning);">
-                <h3>Reversas Pendentes</h3>
-                <div class="value" id="card-reversas">0</div>
-            </div>
-            <div class="card" style="border-left-color: var(--success);">
-                <h3>Envios Hoje</h3>
-                <div class="value" id="card-hoje">0</div>
-            </div>
-            <div class="card" style="border-left-color: var(--danger);">
-                <h3>Gasto Estimado (Mês)</h3>
-                <div class="value" id="card-gasto">R$ 0,00</div>
-            </div>
+    <div class="main">
+        <div class="header-actions">
+            <h1>Painel Operacional</h1>
+            <button onclick="document.getElementById('form-solicitacao').scrollIntoView()" class="prioridade-btn" style="background: var(--accent); padding: 12px 20px; font-size: 0.9rem;">+ Nova Solicitação</button>
         </div>
 
-        <!-- Formulário -->
-        <div class="form-section">
-            <h3 style="margin-top:0"><i class="fas fa-plus-circle"></i> Nova Solicitação de Envio / Reversa</h3>
-            <form id="form-solicitacao">
-                <div class="grid-inputs">
-                    <!-- Setor -->
-                    <div class="input-group">
-                        <label>Setor Solicitante (Opcional)</label>
-                        <input type="text" id="input-setor" placeholder="Ex: ADM, Call Center..." onkeyup="filtrarSetor()">
-                        <div id="sugestoes-setor" class="suggestions"></div>
-                    </div>
+        <!-- Dashboard Cards -->
+        <div class="dashboard-grid">
+            <div class="stat-card"><h3>Solicitações (Dia)</h3><span class="val" id="val-dia">0</span></div>
+            <div class="stat-card warning"><h3>Reversas Pendentes</h3><span class="val" id="val-reversas">0</span></div>
+            <div class="stat-card success"><h3>Entregues</h3><span class="val" id="val-entregues">0</span></div>
+            <div class="stat-card danger"><h3>Gasto Confirmado</h3><span class="val" id="val-gasto">R$ 0,00</span></div>
+        </div>
 
-                    <!-- Responsável -->
+        <!-- Formulário de Solicitação -->
+        <div class="section-card" id="form-solicitacao">
+            <h2 style="margin-top: 0; font-size: 1.2rem;"><i class="fas fa-paper-plane"></i> Abertura de Protocolo</h2>
+            <form id="log-form">
+                <div class="form-grid">
                     <div class="input-group">
-                        <label>Responsável Solicitante</label>
-                        <input type="text" id="input-responsavel" placeholder="Digite o nome..." onkeyup="filtrarResponsavel()">
-                        <div id="sugestoes-resp" class="suggestions"></div>
-                    </div>
-
-                    <!-- Tipo -->
-                    <div class="input-group">
-                        <label>Tipo de Envio</label>
-                        <select id="select-tipo" required>
-                            <option value="Sedex">Sedex</option>
-                            <option value="PAC">PAC</option>
-                            <option value="Uber Corporativo">Uber Corporativo</option>
-                            <option value="Motoboy Interno">Motoboy Interno</option>
-                            <option value="Transportadora">Transportadora</option>
+                        <label>Tipo de Solicitação</label>
+                        <select id="tipo_solicitacao" required>
+                            <option value="Envio Comum">Envio Comum</option>
+                            <option value="Logística Reversa">Logística Reversa</option>
+                            <option value="Coleta">Coleta</option>
+                            <option value="Envio Influenciador">Envio Influenciador</option>
+                            <option value="Interno entre PDVs">Interno entre PDVs</option>
                         </select>
                     </div>
+                    <div class="input-group">
+                        <label>Prioridade</label>
+                        <select id="prioridade" required>
+                            <option value="Normal">Normal</option>
+                            <option value="Urgente">Urgente</option>
+                            <option value="Emergencial">Emergencial</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Setor Solicitante</label>
+                        <input type="text" id="setor_busca" placeholder="Ex: Call Center, DT..." list="lista-setores">
+                        <datalist id="lista-setores"></datalist>
+                    </div>
                 </div>
 
-                <div class="grid-inputs">
-                    <input type="text" id="resp-nome" placeholder="Nome Completo" required>
-                    <input type="text" id="resp-cidade" placeholder="Cidade Origem" required>
-                    <input type="text" id="resp-cpf" placeholder="CPF">
-                </div>
-                
-                <div class="grid-inputs">
-                    <input type="email" id="resp-email" placeholder="E-mail">
-                    <input type="text" id="destino" placeholder="Cidade Destino (ou selecione p/ preencher)" onkeyup="filtrarDestino()">
-                    <div id="sugestoes-destino" class="suggestions" style="top: 40px;"></div>
+                <div class="form-grid" style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <div class="input-group">
+                        <label>Responsável Solicitante</label>
+                        <input type="text" id="resp_busca" placeholder="Busque pelo nome..." list="lista-responsaveis">
+                        <datalist id="lista-responsaveis"></datalist>
+                    </div>
+                    <div class="input-group">
+                        <label>Cidade Origem</label>
+                        <input type="text" id="origem_cidade" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>Endereço Completo</label>
+                        <input type="text" id="origem_endereco" readonly>
+                    </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Registrar e Notificar Logística</button>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Destino (PDV ou Cidade)</label>
+                        <input type="text" id="destino_busca" placeholder="Busque PDV ou digite manual..." list="lista-pdvs">
+                        <datalist id="lista-pdvs"></datalist>
+                    </div>
+                    <div class="input-group">
+                        <label>Destinatário</label>
+                        <input type="text" id="destino_nome" required>
+                    </div>
+                    <div class="input-group">
+                        <label>CEP Destino</label>
+                        <input type="text" id="destino_cep">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Descrição dos Itens / Observação</label>
+                    <textarea id="obs" rows="3" placeholder="O que está sendo enviado? Ex: 5 Peças Ref. 202, 1 Brinde..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 700;">REGISTRAR SOLICITAÇÃO NO SISTEMA</button>
             </form>
         </div>
 
-        <!-- Tabela -->
-        <div class="table-container">
+        <!-- Tabela de Acompanhamento -->
+        <div class="section-card">
+            <h2 style="margin-top: 0; font-size: 1.1rem;">Acompanhamento de Envios</h2>
             <table>
                 <thead>
                     <tr>
+                        <th>Protocolo</th>
                         <th>Data</th>
-                        <th>Setor/Responsável</th>
+                        <th>Responsável/Setor</th>
                         <th>Tipo</th>
-                        <th>Origem > Destino</th>
+                        <th>Trajeto (Origem > Destino)</th>
                         <th>Status</th>
-                        <th>Ação</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
-                <tbody id="lista-solicitacoes"></tbody>
+                <tbody id="tabela-logs"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- Modal Logística -->
+    <!-- Modal Atendimento Logística -->
     <div class="overlay" id="overlay"></div>
-    <div class="modal-logistica" id="modal-logistica">
-        <h3>Finalizar Solicitação (Setor Logística)</h3>
-        <input type="hidden" id="edit-id">
-        <label>Código de Rastreio</label>
-        <input type="text" id="log-rastreio" style="margin-bottom:15px">
-        <label>Custo do Envio (R$)</label>
-        <input type="number" id="log-custo" step="0.01" style="margin-bottom:15px">
-        <label>Previsão de Entrega</label>
-        <input type="date" id="log-previsao" style="margin-bottom:15px">
-        <label>Anexar Comprovante (URL/Caminho)</label>
-        <input type="text" id="log-anexo" style="margin-bottom:20px">
-        <button onclick="salvarLogistica()" class="btn-submit">Finalizar e Devolver ao Responsável</button>
+    <div class="modal" id="modal-atendimento">
+        <h2 id="modal-prot">Protocolo #</h2>
+        <div class="input-group">
+            <label>Modalidade de Envio</label>
+            <select id="log-modalidade">
+                <option value="Sedex">Correios (Sedex)</option>
+                <option value="PAC">Correios (PAC)</option>
+                <option value="Uber">Uber Corporativo</option>
+                <option value="Motoboy">Motoboy Interno</option>
+                <option value="Easy Courier">Easy Courier</option>
+                <option value="Transportadora">Transportadora</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Código de Rastreio</label>
+            <input type="text" id="log-rastreio">
+        </div>
+        <div class="input-group">
+            <label>Custo Real (R$)</label>
+            <input type="number" id="log-custo" step="0.01">
+        </div>
+        <div class="input-group">
+            <label>Previsão de Entrega</label>
+            <input type="date" id="log-previsao">
+        </div>
+        <button onclick="salvarAtendimento()" style="background: var(--primary); color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer;">Finalizar Atendimento</button>
     </div>
 
     <script src="app.js"></script>
