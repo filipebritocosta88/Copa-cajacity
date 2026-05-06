@@ -1,178 +1,381 @@
-/**
- * SISTEMA LOGISTICA V2.0 - CORE ENGINE
- * Totalmente funcional e integrado ao Metasboard
- */
-
-// 1. GESTÃO DE ESTADO (BANCO DE DADOS LOCAL)
-let storage = JSON.parse(localStorage.getItem('metas_log_db')) || {
-    solicitacoes: [],
-    responsaveis: [
-        { nome: "Equipe Suporte", email: "suporte@metasboard.com", cpf: "00.000.000/0001-00" }
-    ],
-    pdvs: [
-        { nome: "Sede Salvador", cep: "40000-000", rua: "Av. Tancredo Neves", num: "123", bairro: "Caminho das Árvores", cidade: "Salvador", uf: "BA" }
-    ]
-};
-
-// 2. INICIALIZAÇÃO
-window.onload = () => {
-    updateUI();
-    updateClock();
-    setInterval(updateClock, 1000);
-};
-
-// 3. NAVEGAÇÃO ENTRE TELAS (SPA)
-function switchTab(targetId, element) {
-    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGISTICA | Metasboard Premium</title>
+    <!-- Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    document.getElementById(targetId).classList.add('active');
-    element.classList.add('active');
-    
-    updateUI(); // Sincroniza dados sempre que trocar de tela
-}
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f1f5f9;
+            --white: #ffffff;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --sidebar-width: 280px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-// 4. REGISTRO DE SOLICITAÇÃO (O CORAÇÃO DO SISTEMA)
-document.getElementById('form-registro').addEventListener('submit', function(e) {
-    e.preventDefault();
+        /* Reset e Base */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background-color: var(--bg); 
+            display: flex; 
+            min-height: 100vh; 
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
 
-    // Criação do objeto de dados
-    const novaSolicitacao = {
-        id: "LOG-" + Math.floor(100000 + Math.random() * 900000),
-        data: new Date().toLocaleDateString('pt-br') + " " + new Date().toLocaleTimeString('pt-br', {hour: '2-digit', minute:'2-digit'}),
-        tipo: document.getElementById('f-tipo').value,
-        prio: document.getElementById('f-prio').value,
-        setor: document.getElementById('f-setor').value,
-        resp: document.getElementById('f-resp-busca').value,
-        email: document.getElementById('f-email').value,
-        cpf: document.getElementById('f-cpf').value,
-        destinatario: document.getElementById('f-dest-nome').value,
-        cep: document.getElementById('f-dest-cep').value,
-        rua: document.getElementById('f-dest-rua').value,
-        num: document.getElementById('f-dest-num').value,
-        comp: document.getElementById('f-dest-comp').value,
-        bairro: document.getElementById('f-dest-bairro').value,
-        cidade: document.getElementById('f-dest-cid').value,
-        uf: document.getElementById('f-dest-uf').value,
-        status: "Pendente",
-        custo: 0
-    };
+        /* Scrollbar Personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    // Salvar e Notificar
-    storage.solicitacoes.unshift(novaSolicitacao);
-    saveData();
-    showToast("Solicitação gerada com sucesso! Protocolo: " + novaSolicitacao.id, "success");
-    
-    this.reset();
-    switchTab('lista', document.querySelectorAll('.nav-item')[2]);
-});
+        /* Sidebar Otimizada */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
 
-// 5. PREENCHIMENTO AUTOMÁTICO (RESPONSÁVEL E PDV)
-document.getElementById('f-resp-busca').addEventListener('input', function() {
-    const res = storage.responsaveis.find(r => r.nome === this.value);
-    if(res) {
-        document.getElementById('f-email').value = res.email;
-        document.getElementById('f-cpf').value = res.cpf || "";
-    }
-});
+        .sidebar .logo-area {
+            padding: 10px 0 40px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
 
-document.getElementById('f-pdv-busca').addEventListener('input', function() {
-    const pdv = storage.pdvs.find(p => p.nome === this.value);
-    if(pdv) {
-        document.getElementById('f-dest-nome').value = pdv.nome;
-        document.getElementById('f-dest-cep').value = pdv.cep;
-        document.getElementById('f-dest-rua').value = pdv.rua;
-        document.getElementById('f-dest-num').value = pdv.num;
-        document.getElementById('f-dest-bairro').value = pdv.bairro;
-        document.getElementById('f-dest-cid').value = pdv.cidade;
-        document.getElementById('f-dest-uf').value = pdv.uf;
-    }
-});
+        .sidebar .logo-area h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
 
-// 6. CADASTRO DE BASE
-document.getElementById('form-cad-base').onsubmit = function(e) {
-    e.preventDefault();
-    const tipo = document.getElementById('c-tipo').value;
-    const item = {
-        nome: document.getElementById('c-nome').value,
-        email: document.getElementById('c-email').value,
-        cidade: document.getElementById('c-cid').value
-    };
+        .nav-menu { flex: 1; list-style: none; }
 
-    if(tipo === 'resp') storage.responsaveis.push(item);
-    else storage.pdvs.push(item);
+        .nav-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #94a3b8;
+            font-weight: 500;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
 
-    saveData();
-    showToast("Cadastro realizado!", "success");
-    this.reset();
-};
+        .nav-item i { width: 20px; font-size: 1.1rem; text-align: center; }
 
-// 7. ATUALIZAÇÃO DA INTERFACE (UI)
-function updateUI() {
-    // Stats
-    const pendentes = storage.solicitacoes.filter(s => s.status === 'Pendente').length;
-    const finalizados = storage.solicitacoes.filter(s => s.status === 'Finalizado').length;
-    const totalCusto = storage.solicitacoes.reduce((acc, s) => acc + s.custo, 0);
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+            transform: translateX(5px);
+        }
 
-    document.getElementById('st-total').innerText = storage.solicitacoes.length;
-    document.getElementById('st-pend').innerText = pendentes;
-    document.getElementById('st-fin').innerText = finalizados;
-    document.getElementById('st-custo').innerText = totalCusto.toLocaleString('pt-br', {style: 'currency', currency: 'BRL'});
+        .nav-item.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.5);
+        }
 
-    // Tabela Recentes (Dash)
-    renderTable('table-recent', storage.solicitacoes.slice(0, 5), (s) => `
-        <tr><td>${s.id}</td><td>${s.resp}</td><td>${s.cidade}</td><td><span class="badge bg-pending">${s.status}</span></td></tr>
-    `);
+        /* Container Principal */
+        .main-container {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            padding: 40px;
+            min-height: 100vh;
+        }
 
-    // Tabela Histórico Completo
-    renderTable('table-history', storage.solicitacoes, (s) => `
-        <tr><td><strong>#${s.id}</strong></td><td>${s.data}</td><td>${s.resp}</td><td>${s.cidade}/${s.uf}</td>
-        <td><span class="badge ${s.status === 'Pendente' ? 'bg-pending' : 'bg-success'}">${s.status}</span></td></tr>
-    `);
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
 
-    // Tabela Atendimento (Administrativo)
-    renderTable('table-adm', storage.solicitacoes.filter(s => s.status === 'Pendente'), (s) => `
-        <tr>
-            <td><button class="btn btn-action" onclick="finishTask('${s.id}')">Tratar</button></td>
-            <td>${s.id}</td><td>${s.resp}</td><td>${s.cidade}</td>
-            <td><strong style="color:${s.prio === 'Emergencial' ? 'red' : 'inherit'}">${s.prio}</strong></td>
-        </tr>
-    `);
+        .page-header h2 { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
 
-    // Atualizar Datalists
-    document.getElementById('dl-resps').innerHTML = storage.responsaveis.map(r => `<option value="${r.nome}">`).join('');
-    document.getElementById('dl-pdvs').innerHTML = storage.pdvs.map(p => `<option value="${p.nome}">`).join('');
-}
+        /* Telas (SPA) */
+        .page-content { display: none; animation: slideUp 0.4s ease; }
+        .page-content.active { display: block; }
 
-function renderTable(id, data, template) {
-    const tableBody = document.querySelector(`#${id} tbody`);
-    if(tableBody) tableBody.innerHTML = data.map(template).join('');
-}
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-function finishTask(id) {
-    const idx = storage.solicitacoes.findIndex(s => s.id === id);
-    if(idx !== -1) {
-        storage.solicitacoes[idx].status = "Finalizado";
-        saveData();
-        showToast("Solicitação " + id + " finalizada!", "success");
-    }
-}
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
 
-// 8. UTILITÁRIOS
-function saveData() {
-    localStorage.setItem('metas_log_db', JSON.stringify(storage));
-    updateUI();
-}
+        .stat-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            border-bottom: 4px solid var(--accent);
+        }
 
-function showToast(msg, type) {
-    const t = document.getElementById('toast');
-    t.innerText = msg;
-    t.style.background = type === 'success' ? 'var(--success)' : 'var(--danger)';
-    t.style.transform = "translateX(0)";
-    setTimeout(() => t.style.transform = "translateX(150%)", 4000);
-}
+        .stat-card h4 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+        .stat-card .value { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+        .stat-card i { position: absolute; right: 20px; bottom: 20px; font-size: 3rem; opacity: 0.05; }
 
-function updateClock() {
-    const now = new Date();
-    document.getElementById('clock').innerText = now.toLocaleDateString('pt-br') + " - " + now.toLocaleTimeString('pt-br');
-}
+        /* Formulários e Cards */
+        .card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.02);
+            margin-bottom: 30px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--secondary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        .field label { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            background: #f8fafc;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Tabelas */
+        .table-container { overflow-x: auto; border-radius: 15px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { background: #f8fafc; padding: 18px; text-align: left; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        td { padding: 18px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        tr:hover td { background: #f8fafc; }
+
+        /* Badges */
+        .badge { padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
+        .bg-pending { background: #fef3c7; color: #92400e; }
+        .bg-success { background: #dcfce7; color: #166534; }
+
+        /* Botões */
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: var(--transition);
+        }
+
+        .btn-submit { background: var(--success); color: white; width: 100%; margin-top: 20px; font-size: 1rem; }
+        .btn-submit:hover { background: #059669; transform: translateY(-2px); }
+        
+        .btn-action { padding: 8px 12px; background: var(--accent); color: white; font-size: 0.8rem; }
+
+        /* Notificações */
+        .toast {
+            position: fixed; top: 30px; right: 30px; padding: 15px 30px; 
+            border-radius: 12px; color: white; font-weight: 600; z-index: 9999;
+            transform: translateX(150%); transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast"></div>
+
+    <aside class="sidebar">
+        <div class="logo-area"><h1>LOGISTICA</h1></div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="switchTab('dash', this)"><i class="fas fa-th-large"></i> Dashboard</li>
+            <li class="nav-item" onclick="switchTab('novo', this)"><i class="fas fa-paper-plane"></i> Nova Solicitação</li>
+            <li class="nav-item" onclick="switchTab('lista', this)"><i class="fas fa-history"></i> Minhas Solicitações</li>
+            <li class="nav-item" onclick="switchTab('atendimento', this)"><i class="fas fa-headset"></i> Atendimento</li>
+            <li class="nav-item" onclick="switchTab('cadastro', this)"><i class="fas fa-database"></i> Cadastros Base</li>
+        </ul>
+    </aside>
+
+    <main class="main-container">
+        
+        <!-- TELA 1: DASHBOARD -->
+        <section id="dash" class="page-content active">
+            <div class="page-header"><h2>Painel de Controle</h2><div id="clock"></div></div>
+            <div class="stats-grid">
+                <div class="stat-card"><h4>Total de Envios</h4><div class="value" id="st-total">0</div><i class="fas fa-box"></i></div>
+                <div class="stat-card" style="border-color: var(--warning)"><h4>Pendentes</h4><div class="value" id="st-pend">0</div><i class="fas fa-clock"></i></div>
+                <div class="stat-card" style="border-color: var(--success)"><h4>Entregues</h4><div class="value" id="st-fin">0</div><i class="fas fa-check-circle"></i></div>
+                <div class="stat-card" style="border-color: var(--primary)"><h4>Custo Acumulado</h4><div class="value" id="st-custo">R$ 0,00</div><i class="fas fa-dollar-sign"></i></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-stream"></i> Últimas Atividades</div>
+                <div class="table-container">
+                    <table id="table-recent">
+                        <thead><tr><th>ID</th><th>Solicitante</th><th>Destino</th><th>Status</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 2: NOVA SOLICITAÇÃO -->
+        <section id="novo" class="page-content">
+            <div class="page-header"><h2>Registrar Novo Envio</h2></div>
+            <form id="form-registro">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-info-circle"></i> Dados Gerais</div>
+                    <div class="form-grid">
+                        <div class="field"><label>Tipo de Solicitação</label>
+                            <select id="f-tipo"><option>Envio Comum</option><option>Reversa</option><option>Coleta</option></select>
+                        </div>
+                        <div class="field"><label>Prioridade</label>
+                            <select id="f-prio"><option>Normal</option><option>Urgente</option><option>Emergencial</option></select>
+                        </div>
+                        <div class="field"><label>Setor</label><input type="text" id="f-setor" placeholder="Ex: Comercial"></div>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 2fr 1.5fr 1.5fr;">
+                        <div class="field"><label>Responsável (Busca Auto)</label>
+                            <input type="text" id="f-resp-busca" list="dl-resps" placeholder="Comece a digitar o nome...">
+                        </div>
+                        <div class="field"><label>Email</label><input type="email" id="f-email" required></div>
+                        <div class="field"><label>CPF / CNPJ</label><input type="text" id="f-cpf" required></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-map-marked-alt"></i> Dados do Destino</div>
+                    <div class="form-grid">
+                        <div class="field"><label>Buscar PDV / Local Salvo</label>
+                            <input type="text" id="f-pdv-busca" list="dl-pdvs" placeholder="Pesquisar cadastro...">
+                        </div>
+                        <div class="field"><label>Nome do Destinatário</label><input type="text" id="f-dest-nome" required></div>
+                        <div class="field"><label>CEP</label><input type="text" id="f-dest-cep" required></div>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 2fr 0.5fr 1.5fr;">
+                        <div class="field"><label>Logradouro</label><input type="text" id="f-dest-rua" required></div>
+                        <div class="field"><label>Nº</label><input type="text" id="f-dest-num" required></div>
+                        <div class="field"><label>Complemento</label><input type="text" id="f-dest-comp"></div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field"><label>Bairro</label><input type="text" id="f-dest-bairro" required></div>
+                        <div class="field"><label>Cidade</label><input type="text" id="f-dest-cid" required></div>
+                        <div class="field"><label>Estado (UF)</label><input type="text" id="f-dest-uf" required maxlength="2"></div>
+                    </div>
+                    <div class="field"><label>Descrição / Observações</label>
+                        <textarea id="f-obs" rows="3" placeholder="O que estamos enviando? Ex: 2 Notebooks Dell..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-submit"><i class="fas fa-save"></i> FINALIZAR E GERAR PROTOCOLO</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- TELA 3: LISTA -->
+        <section id="lista" class="page-content">
+            <div class="page-header"><h2>Histórico de Solicitações</h2></div>
+            <div class="card">
+                <div class="table-container">
+                    <table id="table-history">
+                        <thead><tr><th>Protocolo</th><th>Data</th><th>Responsável</th><th>Destino</th><th>Status</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 4: ATENDIMENTO -->
+        <section id="atendimento" class="page-content">
+            <div class="page-header"><h2>Fila de Atendimento Logístico</h2></div>
+            <div class="card">
+                <div class="table-container">
+                    <table id="table-adm">
+                        <thead><tr><th>Ação</th><th>ID</th><th>Solicitante</th><th>Cidade Destino</th><th>Prioridade</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 5: CADASTROS -->
+        <section id="cadastro" class="page-content">
+            <div class="page-header"><h2>Gerenciamento de Cadastros</h2></div>
+            <div class="card">
+                <div class="card-title">Adicionar Novo Responsável / PDV</div>
+                <form id="form-cad-base">
+                    <div class="form-grid">
+                        <div class="field"><label>Tipo de Cadastro</label>
+                            <select id="c-tipo"><option value="resp">Responsável Interno</option><option value="pdv">PDV / Ponto de Entrega</option></select>
+                        </div>
+                        <div class="field"><label>Nome Completo</label><input type="text" id="c-nome" required></div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field"><label>Email</label><input type="email" id="c-email"></div>
+                        <div class="field"><label>Cidade</label><input type="text" id="c-cid"></div>
+                    </div>
+                    <button type="submit" class="btn btn-action"><i class="fas fa-plus"></i> Cadastrar na Base</button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Datalists para preenchimento automático -->
+    <datalist id="dl-resps"></datalist>
+    <datalist id="dl-pdvs"></datalist>
+
+    <script src="app.js"></script>
+</body>
+</html>
