@@ -1,144 +1,222 @@
-// Simulação de Banco de Dados (Cadastros Base)
-const DB = {
-    setores: ["Logística", "Loja Virtual", "Mercado Livre", "DT", "Call Center", "ADM", "Estoque", "Financeiro", "Diretoria", "Marketing"],
-    responsaveis: [
-        { nome: "João Silva", cidade: "Maceió", setor: "Gerência", endereco: "Rua das Palmeiras, 10 - PDV Centro", cpf: "123.456.789-00", email: "joao@empresa.com" },
-        { nome: "Maria Santos", cidade: "Rio de Janeiro", setor: "PDV", endereco: "Av. Atlântica, 500 - Barra", cpf: "222.333.444-55", email: "maria@empresa.com" },
-        { nome: "Felipe Oliveira", cidade: "Manaus", setor: "Gerência", endereco: "Rua Amazonas, 99 - Industrial", cpf: "333.444.555-66", email: "felipe@empresa.com" },
-        { nome: "Ricardo Uchoa", cidade: "Salvador", setor: "Loja Virtual", endereco: "Sede Salvador - Sala Logística", cpf: "999.000.111-22", email: "uchoa@empresa.com" }
-    ],
+/**
+ * SISTEMA LOGISTICA - CORE ENGINE
+ * Controle de Fluxo e Persistência
+ */
+
+// Banco de Dados Simulado / Base
+const BASE_DATA = {
+    setores: ["Logística", "Loja Virtual", "Call Center", "DT", "ADM", "Estoque", "Marketing"],
     pdvs: [
-        { nome: "PDV Salvador Shopping", cidade: "Salvador", estado: "BA", responsavel: "Iago" },
-        { nome: "PDV Maceió Centro", cidade: "Maceió", estado: "AL", responsavel: "João" },
-        { nome: "PDV Belém", cidade: "Belém", estado: "PA", responsavel: "Gerência PA" }
+        { nome: "PDV Salvador Shopping", cidade: "Salvador", cep: "41820-020" },
+        { nome: "PDV Maceió Centro", cidade: "Maceió", cep: "57020-000" },
+        { nome: "PDV Rio Barra", cidade: "Rio de Janeiro", cep: "22631-000" }
     ]
 };
 
-let solicitacoes = JSON.parse(localStorage.getItem('log_solicitacoes')) || [];
-let currentEditId = null;
+// Estado da Aplicação
+let responsaveis = JSON.parse(localStorage.getItem('log_resps')) || [
+    { nome: "Iago Silva", cidade: "Salvador", end: "Sede Metasboard - Sala 102" },
+    { nome: "João Maceió", cidade: "Maceió", end: "Rua do Comércio, 45" }
+];
 
-// Inicialização de Datalists (Filtros pesquisáveis)
-function initCadastros() {
-    const listSetores = document.getElementById('lista-setores');
-    DB.setores.forEach(s => listSetores.innerHTML += `<option value="${s}">`);
+let solicitacoes = JSON.parse(localStorage.getItem('log_data')) || [];
 
-    const listResp = document.getElementById('lista-responsaveis');
-    DB.responsaveis.forEach(r => listResp.innerHTML += `<option value="${r.nome}">`);
+/**
+ * INICIALIZAÇÃO
+ */
+window.onload = () => {
+    updateDatalists();
+    refreshUI();
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('pt-br', { dateStyle: 'full' });
+};
 
-    const listPDV = document.getElementById('lista-pdvs');
-    DB.pdvs.forEach(p => listPDV.innerHTML += `<option value="${p.nome}">`);
+/**
+ * NAVEGAÇÃO ENTRE TELAS
+ */
+function switchPage(pageId, element) {
+    // Atualiza Menu
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    element.classList.add('active');
+
+    // Atualiza Tela
+    document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+
+    // Atualiza dados da tela específica
+    refreshUI();
 }
 
-// Preenchimento Automático ao selecionar responsável
-document.getElementById('resp_busca').addEventListener('change', function(e) {
-    const resp = DB.responsaveis.find(r => r.nome === e.target.value);
-    if (resp) {
-        document.getElementById('origem_cidade').value = resp.cidade;
-        document.getElementById('origem_endereco').value = resp.endereco;
-        document.getElementById('setor_busca').value = resp.setor;
+/**
+ * LÓGICA DE FORMULÁRIOS
+ */
+
+// Auto-preenchimento por Responsável
+document.getElementById('f-resp-busca').addEventListener('change', (e) => {
+    const found = responsaveis.find(r => r.nome === e.target.value);
+    if (found) {
+        document.getElementById('f-origem-cidade').value = found.cidade;
+        document.getElementById('f-origem-end').value = found.end;
     }
 });
 
-// Envio de Formulário (Nova Solicitação)
-document.getElementById('log-form').addEventListener('submit', function(e) {
+// Auto-preenchimento por Destino (PDV)
+document.getElementById('f-destino-busca').addEventListener('change', (e) => {
+    const found = BASE_DATA.pdvs.find(p => p.nome === e.target.value);
+    if (found) {
+        document.getElementById('f-dest-nome').value = found.nome;
+        document.getElementById('f-dest-cep').value = found.cep;
+    }
+});
+
+// Registro de Nova Solicitação
+document.getElementById('main-log-form').onsubmit = (e) => {
     e.preventDefault();
-    
+
     const nova = {
-        protocolo: "LOG" + Date.now().toString().slice(-6),
+        id: "LOG" + Math.floor(100000 + Math.random() * 900000),
         data: new Date().toLocaleDateString('pt-br'),
-        timestamp: new Date().getTime(),
-        tipo: document.getElementById('tipo_solicitacao').value,
-        prioridade: document.getElementById('prioridade').value,
-        setor: document.getElementById('setor_busca').value,
-        responsavel: document.getElementById('resp_busca').value,
-        origem: document.getElementById('origem_cidade').value,
-        destino: document.getElementById('destino_busca').value,
-        destinatario: document.getElementById('destino_nome').value,
-        status: "Aguardando Logística",
+        tipo: document.getElementById('f-tipo').value,
+        prioridade: document.getElementById('f-prioridade').value,
+        setor: document.getElementById('f-setor').value,
+        responsavel: document.getElementById('f-resp-busca').value,
+        origem: document.getElementById('f-origem-cidade').value,
+        destino: document.getElementById('f-dest-nome').value,
+        status: "Pendente",
         custo: 0,
+        modalidade: "-",
         rastreio: "-",
-        obs: document.getElementById('obs').value
+        timestamp: new Date().getTime()
     };
 
     solicitacoes.unshift(nova);
-    salvarESincronizar();
-    this.reset();
-    alert("Solicitação registrada com sucesso! Protocolo: " + nova.protocolo);
-});
+    saveData();
+    showNotify("Solicitação " + nova.id + " criada com sucesso!", "success");
+    e.target.reset();
+    switchPage('minhas-solicitacoes', document.querySelectorAll('.nav-item')[2]);
+};
 
-// Ações da Logística (Atendimento)
-function abrirAtendimento(protocolo) {
-    const sol = solicitacoes.find(s => s.protocolo === protocolo);
-    currentEditId = protocolo;
-    document.getElementById('modal-prot').innerText = "Atendimento " + protocolo;
-    document.getElementById('overlay').style.display = 'block';
-    document.getElementById('modal-atendimento').style.display = 'block';
+// Cadastro de Responsável
+document.getElementById('form-cad-resp').onsubmit = (e) => {
+    e.preventDefault();
+    responsaveis.push({
+        nome: document.getElementById('c-nome').value,
+        cidade: document.getElementById('c-cidade').value,
+        end: document.getElementById('c-end').value
+    });
+    localStorage.setItem('log_resps', JSON.stringify(responsaveis));
+    updateDatalists();
+    refreshUI();
+    e.target.reset();
+    showNotify("Responsável cadastrado!", "success");
+};
+
+/**
+ * GESTÃO DE ATENDIMENTO (MODAL)
+ */
+function openAtendimento(id) {
+    const item = solicitacoes.find(s => s.id === id);
+    document.getElementById('m-id').value = id;
+    document.getElementById('m-title').innerText = "Tratar " + id;
+    document.getElementById('modal-overlay').style.display = 'block';
+    document.getElementById('modal-atendimento-box').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    document.getElementById('modal-atendimento-box').style.display = 'none';
 }
 
 function salvarAtendimento() {
-    const idx = solicitacoes.findIndex(s => s.protocolo === currentEditId);
-    if (idx !== -1) {
-        solicitacoes[idx].custo = parseFloat(document.getElementById('log-custo').value) || 0;
-        solicitacoes[idx].rastreio = document.getElementById('log-rastreio').value;
-        solicitacoes[idx].status = "Em Transporte";
-        solicitacoes[idx].modalidade = document.getElementById('log-modalidade').value;
-    }
-    
-    fecharModal();
-    salvarESincronizar();
+    const id = document.getElementById('m-id').value;
+    const idx = solicitacoes.findIndex(s => s.id === id);
+
+    solicitacoes[idx].status = "Finalizado";
+    solicitacoes[idx].modalidade = document.getElementById('m-modalidade').value;
+    solicitacoes[idx].rastreio = document.getElementById('m-rastreio').value;
+    solicitacoes[idx].custo = parseFloat(document.getElementById('m-custo').value) || 0;
+
+    saveData();
+    closeModal();
+    showNotify("Protocolo finalizado!", "success");
 }
 
-function fecharModal() {
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('modal-atendimento').style.display = 'none';
+/**
+ * SINCRONIZAÇÃO DE UI
+ */
+function refreshUI() {
+    renderDashboard();
+    renderTables();
+    updateDashboardStats();
 }
 
-// Renderização e Cálculos
-function render() {
-    const tbody = document.getElementById('tabela-logs');
-    tbody.innerHTML = "";
+function renderTables() {
+    // Tabela Recentes (Dashboard)
+    const recentBody = document.querySelector('#table-recent tbody');
+    recentBody.innerHTML = solicitacoes.slice(0, 5).map(s => `
+        <tr><td>#${s.id}</td><td>${s.data}</td><td>${s.responsavel}</td><td><span class="status-badge prio-normal">${s.status}</span></td></tr>
+    `).join('');
 
-    solicitacoes.forEach(s => {
-        const corPrioridade = s.prioridade === 'Urgente' ? 'var(--warning)' : (s.prioridade === 'Emergencial' ? 'var(--danger)' : '#64748b');
-        
-        tbody.innerHTML += `
-            <tr>
-                <td><strong>#${s.protocolo}</strong></td>
-                <td>${s.data}</td>
-                <td>${s.responsavel}<br><small>${s.setor}</small></td>
-                <td>${s.tipo}<br><span class="prioridade-btn" style="background:${corPrioridade}">${s.prioridade}</span></td>
-                <td>${s.origem} > ${s.destino}</td>
-                <td><span class="badge" style="background:#e2e8f0">${s.status}</span><br><small>Rastreio: ${s.rastreio}</small></td>
-                <td>
-                    ${s.status === 'Aguardando Logística' ? 
-                    `<button onclick="abrirAtendimento('${s.protocolo}')" style="background:var(--accent); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Atender</button>` : 
-                    `<i class="fas fa-check-circle" style="color:var(--success)"></i>`}
-                </td>
-            </tr>
-        `;
-    });
+    // Tabela Minhas Solicitações
+    document.querySelector('#table-my-logs tbody').innerHTML = solicitacoes.map(s => `
+        <tr>
+            <td><strong>#${s.id}</strong></td>
+            <td>${s.data}</td>
+            <td>${s.tipo}</td>
+            <td>${s.origem} > ${s.destino}</td>
+            <td><span class="status-badge ${s.status === 'Pendente' ? 'prio-urgente' : 'prio-normal'}">${s.status}</span></td>
+            <td><i class="fas fa-eye" style="cursor:pointer"></i></td>
+        </tr>
+    `).join('');
 
-    atualizarDashboard();
+    // Tabela Atendimento (Logística)
+    document.querySelector('#table-atendimento tbody').innerHTML = solicitacoes.filter(s => s.status === "Pendente").map(s => `
+        <tr>
+            <td><span class="status-badge prio-${s.prioridade.toLowerCase()}">${s.prioridade}</span></td>
+            <td>#${s.id}</td>
+            <td>${s.responsavel}</td>
+            <td>${s.tipo}</td>
+            <td>${s.status}</td>
+            <td><button class="btn btn-primary" onclick="openAtendimento('${s.id}')" style="padding: 5px 12px; font-size: 0.7rem;">Tratar</button></td>
+        </tr>
+    `).join('');
+
+    // Tabela Relatórios
+    document.querySelector('#table-reports tbody').innerHTML = solicitacoes.filter(s => s.status === "Finalizado").map(s => `
+        <tr><td>#${s.id}</td><td>${s.setor}</td><td>${s.modalidade}</td><td>R$ ${s.custo.toFixed(2)}</td><td>${s.data}</td></tr>
+    `).join('');
+
+    // Tabela Cadastro Responsáveis
+    document.querySelector('#table-cad-resp tbody').innerHTML = responsaveis.map(r => `
+        <tr><td>${r.nome}</td><td>${r.cidade}</td><td>${r.end}</td></tr>
+    `).join('');
 }
 
-function atualizarDashboard() {
-    const hoje = new Date().toLocaleDateString('pt-br');
-    const totalDia = solicitacoes.filter(s => s.data === hoje).length;
-    const reversas = solicitacoes.filter(s => s.tipo === 'Logística Reversa' && s.status !== 'Finalizado').length;
-    const entregues = solicitacoes.filter(s => s.status === 'Finalizado').length;
-    const gastoTotal = solicitacoes.reduce((acc, curr) => acc + curr.custo, 0);
+function updateDashboardStats() {
+    const pendentes = solicitacoes.filter(s => s.status === "Pendente").length;
+    const entregues = solicitacoes.filter(s => s.status === "Finalizado").length;
+    const custo = solicitacoes.reduce((acc, s) => acc + s.custo, 0);
 
-    document.getElementById('val-dia').innerText = totalDia;
-    document.getElementById('val-reversas').innerText = reversas;
-    document.getElementById('val-entregues').innerText = entregues;
-    document.getElementById('val-gasto').innerText = gastoTotal.toLocaleString('pt-br', {style: 'currency', currency: 'BRL'});
+    document.getElementById('dash-total').innerText = solicitacoes.length;
+    document.getElementById('dash-pendentes').innerText = pendentes;
+    document.getElementById('dash-entregues').innerText = entregues;
+    document.getElementById('dash-custo').innerText = custo.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
 }
 
-function salvarESincronizar() {
-    localStorage.setItem('log_solicitacoes', JSON.stringify(solicitacoes));
-    render();
+function updateDatalists() {
+    document.getElementById('list-setores').innerHTML = BASE_DATA.setores.map(s => `<option value="${s}">`).join('');
+    document.getElementById('list-responsaveis').innerHTML = responsaveis.map(r => `<option value="${r.nome}">`).join('');
+    document.getElementById('list-pdvs').innerHTML = BASE_DATA.pdvs.map(p => `<option value="${p.nome}">`).join('');
 }
 
-// Start
-initCadastros();
-render();
+function saveData() {
+    localStorage.setItem('log_data', JSON.stringify(solicitacoes));
+    refreshUI();
+}
+
+function showNotify(msg, type) {
+    const n = document.getElementById('notification');
+    n.innerText = msg;
+    n.style.background = type === 'success' ? 'var(--success)' : 'var(--danger)';
+    n.style.transform = "translateX(0)";
+    setTimeout(() => n.style.transform = "translateX(200%)", 3000);
+}
