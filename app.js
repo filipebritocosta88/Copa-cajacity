@@ -1,222 +1,178 @@
 /**
- * SISTEMA LOGISTICA - CORE ENGINE
- * Controle de Fluxo e Persistência
+ * SISTEMA LOGISTICA V2.0 - CORE ENGINE
+ * Totalmente funcional e integrado ao Metasboard
  */
 
-// Banco de Dados Simulado / Base
-const BASE_DATA = {
-    setores: ["Logística", "Loja Virtual", "Call Center", "DT", "ADM", "Estoque", "Marketing"],
+// 1. GESTÃO DE ESTADO (BANCO DE DADOS LOCAL)
+let storage = JSON.parse(localStorage.getItem('metas_log_db')) || {
+    solicitacoes: [],
+    responsaveis: [
+        { nome: "Equipe Suporte", email: "suporte@metasboard.com", cpf: "00.000.000/0001-00" }
+    ],
     pdvs: [
-        { nome: "PDV Salvador Shopping", cidade: "Salvador", cep: "41820-020" },
-        { nome: "PDV Maceió Centro", cidade: "Maceió", cep: "57020-000" },
-        { nome: "PDV Rio Barra", cidade: "Rio de Janeiro", cep: "22631-000" }
+        { nome: "Sede Salvador", cep: "40000-000", rua: "Av. Tancredo Neves", num: "123", bairro: "Caminho das Árvores", cidade: "Salvador", uf: "BA" }
     ]
 };
 
-// Estado da Aplicação
-let responsaveis = JSON.parse(localStorage.getItem('log_resps')) || [
-    { nome: "Iago Silva", cidade: "Salvador", end: "Sede Metasboard - Sala 102" },
-    { nome: "João Maceió", cidade: "Maceió", end: "Rua do Comércio, 45" }
-];
-
-let solicitacoes = JSON.parse(localStorage.getItem('log_data')) || [];
-
-/**
- * INICIALIZAÇÃO
- */
+// 2. INICIALIZAÇÃO
 window.onload = () => {
-    updateDatalists();
-    refreshUI();
-    document.getElementById('current-date').innerText = new Date().toLocaleDateString('pt-br', { dateStyle: 'full' });
+    updateUI();
+    updateClock();
+    setInterval(updateClock, 1000);
 };
 
-/**
- * NAVEGAÇÃO ENTRE TELAS
- */
-function switchPage(pageId, element) {
-    // Atualiza Menu
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+// 3. NAVEGAÇÃO ENTRE TELAS (SPA)
+function switchTab(targetId, element) {
+    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    
+    document.getElementById(targetId).classList.add('active');
     element.classList.add('active');
-
-    // Atualiza Tela
-    document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-
-    // Atualiza dados da tela específica
-    refreshUI();
+    
+    updateUI(); // Sincroniza dados sempre que trocar de tela
 }
 
-/**
- * LÓGICA DE FORMULÁRIOS
- */
-
-// Auto-preenchimento por Responsável
-document.getElementById('f-resp-busca').addEventListener('change', (e) => {
-    const found = responsaveis.find(r => r.nome === e.target.value);
-    if (found) {
-        document.getElementById('f-origem-cidade').value = found.cidade;
-        document.getElementById('f-origem-end').value = found.end;
-    }
-});
-
-// Auto-preenchimento por Destino (PDV)
-document.getElementById('f-destino-busca').addEventListener('change', (e) => {
-    const found = BASE_DATA.pdvs.find(p => p.nome === e.target.value);
-    if (found) {
-        document.getElementById('f-dest-nome').value = found.nome;
-        document.getElementById('f-dest-cep').value = found.cep;
-    }
-});
-
-// Registro de Nova Solicitação
-document.getElementById('main-log-form').onsubmit = (e) => {
+// 4. REGISTRO DE SOLICITAÇÃO (O CORAÇÃO DO SISTEMA)
+document.getElementById('form-registro').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    const nova = {
-        id: "LOG" + Math.floor(100000 + Math.random() * 900000),
-        data: new Date().toLocaleDateString('pt-br'),
+    // Criação do objeto de dados
+    const novaSolicitacao = {
+        id: "LOG-" + Math.floor(100000 + Math.random() * 900000),
+        data: new Date().toLocaleDateString('pt-br') + " " + new Date().toLocaleTimeString('pt-br', {hour: '2-digit', minute:'2-digit'}),
         tipo: document.getElementById('f-tipo').value,
-        prioridade: document.getElementById('f-prioridade').value,
+        prio: document.getElementById('f-prio').value,
         setor: document.getElementById('f-setor').value,
-        responsavel: document.getElementById('f-resp-busca').value,
-        origem: document.getElementById('f-origem-cidade').value,
-        destino: document.getElementById('f-dest-nome').value,
+        resp: document.getElementById('f-resp-busca').value,
+        email: document.getElementById('f-email').value,
+        cpf: document.getElementById('f-cpf').value,
+        destinatario: document.getElementById('f-dest-nome').value,
+        cep: document.getElementById('f-dest-cep').value,
+        rua: document.getElementById('f-dest-rua').value,
+        num: document.getElementById('f-dest-num').value,
+        comp: document.getElementById('f-dest-comp').value,
+        bairro: document.getElementById('f-dest-bairro').value,
+        cidade: document.getElementById('f-dest-cid').value,
+        uf: document.getElementById('f-dest-uf').value,
         status: "Pendente",
-        custo: 0,
-        modalidade: "-",
-        rastreio: "-",
-        timestamp: new Date().getTime()
+        custo: 0
     };
 
-    solicitacoes.unshift(nova);
+    // Salvar e Notificar
+    storage.solicitacoes.unshift(novaSolicitacao);
     saveData();
-    showNotify("Solicitação " + nova.id + " criada com sucesso!", "success");
-    e.target.reset();
-    switchPage('minhas-solicitacoes', document.querySelectorAll('.nav-item')[2]);
-};
+    showToast("Solicitação gerada com sucesso! Protocolo: " + novaSolicitacao.id, "success");
+    
+    this.reset();
+    switchTab('lista', document.querySelectorAll('.nav-item')[2]);
+});
 
-// Cadastro de Responsável
-document.getElementById('form-cad-resp').onsubmit = (e) => {
+// 5. PREENCHIMENTO AUTOMÁTICO (RESPONSÁVEL E PDV)
+document.getElementById('f-resp-busca').addEventListener('input', function() {
+    const res = storage.responsaveis.find(r => r.nome === this.value);
+    if(res) {
+        document.getElementById('f-email').value = res.email;
+        document.getElementById('f-cpf').value = res.cpf || "";
+    }
+});
+
+document.getElementById('f-pdv-busca').addEventListener('input', function() {
+    const pdv = storage.pdvs.find(p => p.nome === this.value);
+    if(pdv) {
+        document.getElementById('f-dest-nome').value = pdv.nome;
+        document.getElementById('f-dest-cep').value = pdv.cep;
+        document.getElementById('f-dest-rua').value = pdv.rua;
+        document.getElementById('f-dest-num').value = pdv.num;
+        document.getElementById('f-dest-bairro').value = pdv.bairro;
+        document.getElementById('f-dest-cid').value = pdv.cidade;
+        document.getElementById('f-dest-uf').value = pdv.uf;
+    }
+});
+
+// 6. CADASTRO DE BASE
+document.getElementById('form-cad-base').onsubmit = function(e) {
     e.preventDefault();
-    responsaveis.push({
+    const tipo = document.getElementById('c-tipo').value;
+    const item = {
         nome: document.getElementById('c-nome').value,
-        cidade: document.getElementById('c-cidade').value,
-        end: document.getElementById('c-end').value
-    });
-    localStorage.setItem('log_resps', JSON.stringify(responsaveis));
-    updateDatalists();
-    refreshUI();
-    e.target.reset();
-    showNotify("Responsável cadastrado!", "success");
-};
+        email: document.getElementById('c-email').value,
+        cidade: document.getElementById('c-cid').value
+    };
 
-/**
- * GESTÃO DE ATENDIMENTO (MODAL)
- */
-function openAtendimento(id) {
-    const item = solicitacoes.find(s => s.id === id);
-    document.getElementById('m-id').value = id;
-    document.getElementById('m-title').innerText = "Tratar " + id;
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('modal-atendimento-box').style.display = 'block';
-}
-
-function closeModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
-    document.getElementById('modal-atendimento-box').style.display = 'none';
-}
-
-function salvarAtendimento() {
-    const id = document.getElementById('m-id').value;
-    const idx = solicitacoes.findIndex(s => s.id === id);
-
-    solicitacoes[idx].status = "Finalizado";
-    solicitacoes[idx].modalidade = document.getElementById('m-modalidade').value;
-    solicitacoes[idx].rastreio = document.getElementById('m-rastreio').value;
-    solicitacoes[idx].custo = parseFloat(document.getElementById('m-custo').value) || 0;
+    if(tipo === 'resp') storage.responsaveis.push(item);
+    else storage.pdvs.push(item);
 
     saveData();
-    closeModal();
-    showNotify("Protocolo finalizado!", "success");
-}
+    showToast("Cadastro realizado!", "success");
+    this.reset();
+};
 
-/**
- * SINCRONIZAÇÃO DE UI
- */
-function refreshUI() {
-    renderDashboard();
-    renderTables();
-    updateDashboardStats();
-}
+// 7. ATUALIZAÇÃO DA INTERFACE (UI)
+function updateUI() {
+    // Stats
+    const pendentes = storage.solicitacoes.filter(s => s.status === 'Pendente').length;
+    const finalizados = storage.solicitacoes.filter(s => s.status === 'Finalizado').length;
+    const totalCusto = storage.solicitacoes.reduce((acc, s) => acc + s.custo, 0);
 
-function renderTables() {
-    // Tabela Recentes (Dashboard)
-    const recentBody = document.querySelector('#table-recent tbody');
-    recentBody.innerHTML = solicitacoes.slice(0, 5).map(s => `
-        <tr><td>#${s.id}</td><td>${s.data}</td><td>${s.responsavel}</td><td><span class="status-badge prio-normal">${s.status}</span></td></tr>
-    `).join('');
+    document.getElementById('st-total').innerText = storage.solicitacoes.length;
+    document.getElementById('st-pend').innerText = pendentes;
+    document.getElementById('st-fin').innerText = finalizados;
+    document.getElementById('st-custo').innerText = totalCusto.toLocaleString('pt-br', {style: 'currency', currency: 'BRL'});
 
-    // Tabela Minhas Solicitações
-    document.querySelector('#table-my-logs tbody').innerHTML = solicitacoes.map(s => `
+    // Tabela Recentes (Dash)
+    renderTable('table-recent', storage.solicitacoes.slice(0, 5), (s) => `
+        <tr><td>${s.id}</td><td>${s.resp}</td><td>${s.cidade}</td><td><span class="badge bg-pending">${s.status}</span></td></tr>
+    `);
+
+    // Tabela Histórico Completo
+    renderTable('table-history', storage.solicitacoes, (s) => `
+        <tr><td><strong>#${s.id}</strong></td><td>${s.data}</td><td>${s.resp}</td><td>${s.cidade}/${s.uf}</td>
+        <td><span class="badge ${s.status === 'Pendente' ? 'bg-pending' : 'bg-success'}">${s.status}</span></td></tr>
+    `);
+
+    // Tabela Atendimento (Administrativo)
+    renderTable('table-adm', storage.solicitacoes.filter(s => s.status === 'Pendente'), (s) => `
         <tr>
-            <td><strong>#${s.id}</strong></td>
-            <td>${s.data}</td>
-            <td>${s.tipo}</td>
-            <td>${s.origem} > ${s.destino}</td>
-            <td><span class="status-badge ${s.status === 'Pendente' ? 'prio-urgente' : 'prio-normal'}">${s.status}</span></td>
-            <td><i class="fas fa-eye" style="cursor:pointer"></i></td>
+            <td><button class="btn btn-action" onclick="finishTask('${s.id}')">Tratar</button></td>
+            <td>${s.id}</td><td>${s.resp}</td><td>${s.cidade}</td>
+            <td><strong style="color:${s.prio === 'Emergencial' ? 'red' : 'inherit'}">${s.prio}</strong></td>
         </tr>
-    `).join('');
+    `);
 
-    // Tabela Atendimento (Logística)
-    document.querySelector('#table-atendimento tbody').innerHTML = solicitacoes.filter(s => s.status === "Pendente").map(s => `
-        <tr>
-            <td><span class="status-badge prio-${s.prioridade.toLowerCase()}">${s.prioridade}</span></td>
-            <td>#${s.id}</td>
-            <td>${s.responsavel}</td>
-            <td>${s.tipo}</td>
-            <td>${s.status}</td>
-            <td><button class="btn btn-primary" onclick="openAtendimento('${s.id}')" style="padding: 5px 12px; font-size: 0.7rem;">Tratar</button></td>
-        </tr>
-    `).join('');
-
-    // Tabela Relatórios
-    document.querySelector('#table-reports tbody').innerHTML = solicitacoes.filter(s => s.status === "Finalizado").map(s => `
-        <tr><td>#${s.id}</td><td>${s.setor}</td><td>${s.modalidade}</td><td>R$ ${s.custo.toFixed(2)}</td><td>${s.data}</td></tr>
-    `).join('');
-
-    // Tabela Cadastro Responsáveis
-    document.querySelector('#table-cad-resp tbody').innerHTML = responsaveis.map(r => `
-        <tr><td>${r.nome}</td><td>${r.cidade}</td><td>${r.end}</td></tr>
-    `).join('');
+    // Atualizar Datalists
+    document.getElementById('dl-resps').innerHTML = storage.responsaveis.map(r => `<option value="${r.nome}">`).join('');
+    document.getElementById('dl-pdvs').innerHTML = storage.pdvs.map(p => `<option value="${p.nome}">`).join('');
 }
 
-function updateDashboardStats() {
-    const pendentes = solicitacoes.filter(s => s.status === "Pendente").length;
-    const entregues = solicitacoes.filter(s => s.status === "Finalizado").length;
-    const custo = solicitacoes.reduce((acc, s) => acc + s.custo, 0);
-
-    document.getElementById('dash-total').innerText = solicitacoes.length;
-    document.getElementById('dash-pendentes').innerText = pendentes;
-    document.getElementById('dash-entregues').innerText = entregues;
-    document.getElementById('dash-custo').innerText = custo.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
+function renderTable(id, data, template) {
+    const tableBody = document.querySelector(`#${id} tbody`);
+    if(tableBody) tableBody.innerHTML = data.map(template).join('');
 }
 
-function updateDatalists() {
-    document.getElementById('list-setores').innerHTML = BASE_DATA.setores.map(s => `<option value="${s}">`).join('');
-    document.getElementById('list-responsaveis').innerHTML = responsaveis.map(r => `<option value="${r.nome}">`).join('');
-    document.getElementById('list-pdvs').innerHTML = BASE_DATA.pdvs.map(p => `<option value="${p.nome}">`).join('');
+function finishTask(id) {
+    const idx = storage.solicitacoes.findIndex(s => s.id === id);
+    if(idx !== -1) {
+        storage.solicitacoes[idx].status = "Finalizado";
+        saveData();
+        showToast("Solicitação " + id + " finalizada!", "success");
+    }
 }
 
+// 8. UTILITÁRIOS
 function saveData() {
-    localStorage.setItem('log_data', JSON.stringify(solicitacoes));
-    refreshUI();
+    localStorage.setItem('metas_log_db', JSON.stringify(storage));
+    updateUI();
 }
 
-function showNotify(msg, type) {
-    const n = document.getElementById('notification');
-    n.innerText = msg;
-    n.style.background = type === 'success' ? 'var(--success)' : 'var(--danger)';
-    n.style.transform = "translateX(0)";
-    setTimeout(() => n.style.transform = "translateX(200%)", 3000);
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.background = type === 'success' ? 'var(--success)' : 'var(--danger)';
+    t.style.transform = "translateX(0)";
+    setTimeout(() => t.style.transform = "translateX(150%)", 4000);
+}
+
+function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').innerText = now.toLocaleDateString('pt-br') + " - " + now.toLocaleTimeString('pt-br');
 }
