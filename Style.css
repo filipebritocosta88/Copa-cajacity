@@ -1,0 +1,143 @@
+:root {
+    --primary: #1e293b;
+    --accent: #3b82f6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #334155;
+    --sidebar-width: 260px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* Layout Base */
+.app-container { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--primary);
+    color: white;
+    padding: 2rem 1rem;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+}
+
+.logo { 
+    font-size: 1.5rem; 
+    font-weight: 800; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    margin-bottom: 3rem;
+    color: var(--accent);
+}
+
+.nav-links { list-style: none; }
+.nav-links li {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: 0.3s;
+    color: #94a3b8;
+}
+
+.nav-links li:hover, .nav-links li.active {
+    background: rgba(59, 130, 246, 0.1);
+    color: white;
+}
+
+.nav-links li.active { border-left: 4px solid var(--accent); background: #334155; }
+
+/* Main Content */
+.main-content { margin-left: var(--sidebar-width); flex: 1; padding: 2rem; }
+
+.main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+
+/* Cards Dashboard */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+.stat-card {
+    background: var(--card);
+    padding: 1.5rem;
+    border-radius: 16px;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    border-bottom: 4px solid var(--accent);
+}
+
+.stat-card.warning { border-color: var(--warning); }
+.stat-card.success { border-color: var(--success); }
+.stat-card.budget { border-color: var(--danger); }
+
+.stat-card .label { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+.stat-card h2 { font-size: 1.8rem; margin-top: 0.5rem; }
+.icon-bg { position: absolute; right: 1rem; top: 1rem; font-size: 2.5rem; opacity: 0.1; }
+
+/* Forms */
+.form-card { background: white; padding: 2rem; border-radius: 16px; max-width: 900px; margin: 0 auto; }
+.form-section { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9; }
+.form-section h3 { font-size: 1rem; margin-bottom: 1rem; color: var(--primary); }
+
+.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem; }
+.field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; }
+.field label { font-size: 0.85rem; font-weight: 700; color: #475569; }
+
+input, select, textarea {
+    padding: 0.8rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+.btn-submit {
+    width: 100%;
+    padding: 1rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* SLA & Status */
+.sla-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.sla-normal { background: var(--success); }
+.sla-warning { background: var(--warning); animation: pulse 1.5s infinite; }
+.sla-critical { background: var(--danger); animation: pulse 1s infinite; }
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+/* Tabs */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.4s; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .sidebar { width: 100%; height: auto; position: fixed; bottom: 0; top: auto; padding: 0.5rem; }
+    .logo { display: none; }
+    .nav-links { display: flex; justify-content: space-around; }
+    .nav-links li { flex-direction: column; font-size: 0.7rem; gap: 5px; padding: 0.5rem; }
+    .nav-links li i { font-size: 1.2rem; }
+    .main-content { margin-left: 0; margin-bottom: 80px; padding: 1rem; }
+    .input-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+}
