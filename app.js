@@ -1,178 +1,116 @@
-/**
- * SISTEMA LOGISTICA V2.0 - CORE ENGINE
- * Totalmente funcional e integrado ao Metasboard
- */
+// SIMULAÇÃO DE BANCO DE DADOS (Substituir por Firestore depois)
+let db_requests = [
+    { id: "LOG-001", solicitante: "João (Maceió)", tipo: "Reversa", destino: "Salvador", status: "Aguardando", prioridade: "Urgente", criado_em: new Date(Date.now() - 5 * 60 * 60 * 1000) }, // 5h atrás
+    { id: "LOG-002", solicitante: "Filipe (Salvador)", tipo: "Envio", destino: "Manaus", status: "Em Transporte", prioridade: "Normal", criado_em: new Date() }
+];
 
-// 1. GESTÃO DE ESTADO (BANCO DE DADOS LOCAL)
-let storage = JSON.parse(localStorage.getItem('metas_log_db')) || {
-    solicitacoes: [],
-    responsaveis: [
-        { nome: "Equipe Suporte", email: "suporte@metasboard.com", cpf: "00.000.000/0001-00" }
-    ],
-    pdvs: [
-        { nome: "Sede Salvador", cep: "40000-000", rua: "Av. Tancredo Neves", num: "123", bairro: "Caminho das Árvores", cidade: "Salvador", uf: "BA" }
-    ]
+const db_users = {
+    "João (Maceió)": { cidade: "Maceió", cpf: "123.***.***-00", email: "joao@empresa.com", tel: "(82) 9999-0000" },
+    "Filipe (Salvador)": { cidade: "Salvador", cpf: "456.***.***-11", email: "filipe@empresa.com", tel: "(71) 9888-1111" }
 };
 
-// 2. INICIALIZAÇÃO
-window.onload = () => {
-    updateUI();
-    updateClock();
-    setInterval(updateClock, 1000);
-};
+const budgets = { "Marketing": 4000, "Vendas": 8000, "Logística": 10000 };
+let spent = { "Marketing": 3800, "Vendas": 1200 };
 
-// 3. NAVEGAÇÃO ENTRE TELAS (SPA)
-function switchTab(targetId, element) {
-    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+// INICIALIZAÇÃO
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+    renderStats();
+    renderTable();
+});
+
+// TROCA DE ABAS
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
     
-    document.getElementById(targetId).classList.add('active');
-    element.classList.add('active');
-    
-    updateUI(); // Sincroniza dados sempre que trocar de tela
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    event.currentTarget.classList.add('active');
 }
 
-// 4. REGISTRO DE SOLICITAÇÃO (O CORAÇÃO DO SISTEMA)
-document.getElementById('form-registro').addEventListener('submit', function(e) {
+// AUTO-PREENCHIMENTO
+function autoFillUser(val) {
+    const infoDiv = document.getElementById('auto-fields');
+    if (db_users[val]) {
+        const user = db_users[val];
+        infoDiv.innerHTML = `
+            <div class="badge-info">
+                <strong>📍 Origem:</strong> ${user.cidade} | <strong>📧:</strong> ${user.email} <br>
+                <strong>ID:</strong> ${user.cpf} | <strong>📞:</strong> ${user.tel}
+            </div>
+        `;
+        checkBudget(document.getElementById('req-sector').value);
+    } else {
+        infoDiv.innerHTML = "";
+    }
+}
+
+// ALERTA DE ORÇAMENTO
+function checkBudget(sector) {
+    if (spent[sector] >= budgets[sector] * 0.9) {
+        alert(`⚠️ ATENÇÃO: O setor ${sector} atingiu 90% do orçamento mensal de fretes!`);
+    }
+}
+
+// LOGICA DE SLA (CORES)
+function getSLAClass(criado_em, prioridade) {
+    const diffHours = (new Date() - criado_em) / (1000 * 60 * 60);
+    
+    if (prioridade === 'Critica') return 'sla-critical';
+    if (prioridade === 'Urgente' && diffHours >= 4) return 'sla-critical';
+    if (prioridade === 'Urgente' && diffHours >= 2) return 'sla-warning';
+    if (diffHours >= 24) return 'sla-critical';
+    return 'sla-normal';
+}
+
+// RENDERIZAR TABELA
+function renderTable() {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = "";
+
+    db_requests.forEach(req => {
+        const slaClass = getSLAClass(req.criado_em, req.prioridade);
+        const row = `
+            <tr>
+                <td><span class="sla-dot ${slaClass}"></span></td>
+                <td><strong>#${req.id}</strong></td>
+                <td>${req.solicitante}</td>
+                <td>${req.tipo}</td>
+                <td>${req.destino}</td>
+                <td><span class="status-pill">${req.status}</span></td>
+                <td><button onclick="openAtendimento('${req.id}')" class="btn-table">Atender</button></td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+// RENDERIZAR STATS
+function renderStats() {
+    document.getElementById('count-open').innerText = db_requests.filter(r => r.status === 'Aguardando').length;
+    document.getElementById('count-urgent').innerText = db_requests.filter(r => r.prioridade !== 'Normal').length;
+    document.getElementById('total-cost').innerText = "R$ 5.120,00"; // Mock
+}
+
+// TOGGLE DESTINO
+function toggleDest(isManual) {
+    document.getElementById('dest-pdv-field').style.display = isManual ? 'none' : 'block';
+    document.getElementById('dest-manual-fields').style.display = isManual ? 'block' : 'none';
+}
+
+// MODAL
+function openAtendimento(id) {
+    document.getElementById('modal-protocolo').innerText = `#${id}`;
+    document.getElementById('modal-atendimento').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('modal-atendimento').style.display = 'none';
+}
+
+// SUBMIT FORM
+document.getElementById('request-form').addEventListener('submit', (e) => {
     e.preventDefault();
-
-    // Criação do objeto de dados
-    const novaSolicitacao = {
-        id: "LOG-" + Math.floor(100000 + Math.random() * 900000),
-        data: new Date().toLocaleDateString('pt-br') + " " + new Date().toLocaleTimeString('pt-br', {hour: '2-digit', minute:'2-digit'}),
-        tipo: document.getElementById('f-tipo').value,
-        prio: document.getElementById('f-prio').value,
-        setor: document.getElementById('f-setor').value,
-        resp: document.getElementById('f-resp-busca').value,
-        email: document.getElementById('f-email').value,
-        cpf: document.getElementById('f-cpf').value,
-        destinatario: document.getElementById('f-dest-nome').value,
-        cep: document.getElementById('f-dest-cep').value,
-        rua: document.getElementById('f-dest-rua').value,
-        num: document.getElementById('f-dest-num').value,
-        comp: document.getElementById('f-dest-comp').value,
-        bairro: document.getElementById('f-dest-bairro').value,
-        cidade: document.getElementById('f-dest-cid').value,
-        uf: document.getElementById('f-dest-uf').value,
-        status: "Pendente",
-        custo: 0
-    };
-
-    // Salvar e Notificar
-    storage.solicitacoes.unshift(novaSolicitacao);
-    saveData();
-    showToast("Solicitação gerada com sucesso! Protocolo: " + novaSolicitacao.id, "success");
-    
-    this.reset();
-    switchTab('lista', document.querySelectorAll('.nav-item')[2]);
+    alert("Solicitação enviada! Protocolo: LOG-" + Math.floor(Math.random()*1000));
+    switchTab('dash');
 });
-
-// 5. PREENCHIMENTO AUTOMÁTICO (RESPONSÁVEL E PDV)
-document.getElementById('f-resp-busca').addEventListener('input', function() {
-    const res = storage.responsaveis.find(r => r.nome === this.value);
-    if(res) {
-        document.getElementById('f-email').value = res.email;
-        document.getElementById('f-cpf').value = res.cpf || "";
-    }
-});
-
-document.getElementById('f-pdv-busca').addEventListener('input', function() {
-    const pdv = storage.pdvs.find(p => p.nome === this.value);
-    if(pdv) {
-        document.getElementById('f-dest-nome').value = pdv.nome;
-        document.getElementById('f-dest-cep').value = pdv.cep;
-        document.getElementById('f-dest-rua').value = pdv.rua;
-        document.getElementById('f-dest-num').value = pdv.num;
-        document.getElementById('f-dest-bairro').value = pdv.bairro;
-        document.getElementById('f-dest-cid').value = pdv.cidade;
-        document.getElementById('f-dest-uf').value = pdv.uf;
-    }
-});
-
-// 6. CADASTRO DE BASE
-document.getElementById('form-cad-base').onsubmit = function(e) {
-    e.preventDefault();
-    const tipo = document.getElementById('c-tipo').value;
-    const item = {
-        nome: document.getElementById('c-nome').value,
-        email: document.getElementById('c-email').value,
-        cidade: document.getElementById('c-cid').value
-    };
-
-    if(tipo === 'resp') storage.responsaveis.push(item);
-    else storage.pdvs.push(item);
-
-    saveData();
-    showToast("Cadastro realizado!", "success");
-    this.reset();
-};
-
-// 7. ATUALIZAÇÃO DA INTERFACE (UI)
-function updateUI() {
-    // Stats
-    const pendentes = storage.solicitacoes.filter(s => s.status === 'Pendente').length;
-    const finalizados = storage.solicitacoes.filter(s => s.status === 'Finalizado').length;
-    const totalCusto = storage.solicitacoes.reduce((acc, s) => acc + s.custo, 0);
-
-    document.getElementById('st-total').innerText = storage.solicitacoes.length;
-    document.getElementById('st-pend').innerText = pendentes;
-    document.getElementById('st-fin').innerText = finalizados;
-    document.getElementById('st-custo').innerText = totalCusto.toLocaleString('pt-br', {style: 'currency', currency: 'BRL'});
-
-    // Tabela Recentes (Dash)
-    renderTable('table-recent', storage.solicitacoes.slice(0, 5), (s) => `
-        <tr><td>${s.id}</td><td>${s.resp}</td><td>${s.cidade}</td><td><span class="badge bg-pending">${s.status}</span></td></tr>
-    `);
-
-    // Tabela Histórico Completo
-    renderTable('table-history', storage.solicitacoes, (s) => `
-        <tr><td><strong>#${s.id}</strong></td><td>${s.data}</td><td>${s.resp}</td><td>${s.cidade}/${s.uf}</td>
-        <td><span class="badge ${s.status === 'Pendente' ? 'bg-pending' : 'bg-success'}">${s.status}</span></td></tr>
-    `);
-
-    // Tabela Atendimento (Administrativo)
-    renderTable('table-adm', storage.solicitacoes.filter(s => s.status === 'Pendente'), (s) => `
-        <tr>
-            <td><button class="btn btn-action" onclick="finishTask('${s.id}')">Tratar</button></td>
-            <td>${s.id}</td><td>${s.resp}</td><td>${s.cidade}</td>
-            <td><strong style="color:${s.prio === 'Emergencial' ? 'red' : 'inherit'}">${s.prio}</strong></td>
-        </tr>
-    `);
-
-    // Atualizar Datalists
-    document.getElementById('dl-resps').innerHTML = storage.responsaveis.map(r => `<option value="${r.nome}">`).join('');
-    document.getElementById('dl-pdvs').innerHTML = storage.pdvs.map(p => `<option value="${p.nome}">`).join('');
-}
-
-function renderTable(id, data, template) {
-    const tableBody = document.querySelector(`#${id} tbody`);
-    if(tableBody) tableBody.innerHTML = data.map(template).join('');
-}
-
-function finishTask(id) {
-    const idx = storage.solicitacoes.findIndex(s => s.id === id);
-    if(idx !== -1) {
-        storage.solicitacoes[idx].status = "Finalizado";
-        saveData();
-        showToast("Solicitação " + id + " finalizada!", "success");
-    }
-}
-
-// 8. UTILITÁRIOS
-function saveData() {
-    localStorage.setItem('metas_log_db', JSON.stringify(storage));
-    updateUI();
-}
-
-function showToast(msg, type) {
-    const t = document.getElementById('toast');
-    t.innerText = msg;
-    t.style.background = type === 'success' ? 'var(--success)' : 'var(--danger)';
-    t.style.transform = "translateX(0)";
-    setTimeout(() => t.style.transform = "translateX(150%)", 4000);
-}
-
-function updateClock() {
-    const now = new Date();
-    document.getElementById('clock').innerText = now.toLocaleDateString('pt-br') + " - " + now.toLocaleTimeString('pt-br');
-}
